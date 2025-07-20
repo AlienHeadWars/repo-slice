@@ -16,7 +16,12 @@ Our development process follows these steps:
 
 ## Branching Strategy
 
-*(This section will define the mandatory branch naming convention: `[type]/[ticket-id]-short-description`).*
+All work, without exception, must be done on a feature branch. This ensures that the `main` branch is always stable. The following rules must be adhered to:
+
+* **Branch Naming**: Branches must be named descriptively and reference the ticket they resolve.  The mandatory format is `[type]/[ticket-id]-short-description`. 
+    * **Example (feature):** `feature/TD-002-add-testing-framework` 
+    * **Example (bug fix):** `fix/BUG-001-prevent-self-target` 
+* **Short-Lived Branches**: Branches should be small in scope and short-lived.  They should be merged into `main` as soon as their single, focused task is complete and has been reviewed. 
 
 ## Commit Message Standard
 
