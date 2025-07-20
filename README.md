@@ -27,7 +27,12 @@ The workflow is straightforward:
 
 ## Workflow Overview
 
-*(This section will use a numbered list to describe the step-by-step CI/CD workflow: Define -> Slice -> Push, as per rule:styleguide:lists:20250720-001550-008).*
+`repo-slice` is designed to be the engine of a fully automated CI/CD pipeline. The typical workflow is as follows:
+
+1.  **Define**: In your main branch, create and maintain a manifest file (e.g., `roles/ai-docs-writer.allow.txt`). This file declaratively lists every file and directory that is relevant to a specific AI role.
+2.  **Slice**: A scheduled CI/CD job checks out your repository. It then runs the `repo-slice` command, pointing to your manifest file, which creates a clean, filtered directory.
+3.  **Push**: The CI/CD job forcefully pushes the contents of this newly created directory to a dedicated context branch (e.g., `context/ai-docs-writer`), overwriting its previous contents.
+4.  **Configure**: Your AI assistant (e.g., a Gemini Gem) is configured to use this specific context branch as its knowledge source, ensuring it always has the latest, most relevant information without any manual intervention.
 
 ## Getting Started
 
@@ -39,7 +44,7 @@ The workflow is straightforward:
 
 ### Basic Usage
 
-*(This section will provide a simple, self-contained code snippet showing the most common command-line invocation, as required by rule:styleguide:code-snippets:20250720-001550-010).*
+*(This section will provide a simple, self-contained code snippet showing the most common command-line invocation, as required by rule:styleguide:code-snippets).*
 
 ## Command-Line Reference
 
@@ -47,11 +52,11 @@ The workflow is straightforward:
 
 ### Arguments
 
-*(This section will use a table to detail all command-line flags, their purpose, and whether they are required, as per rule:styleguide:tables:20250720-001550-009).*
+*(This section will use a table to detail all command-line flags, their purpose, and whether they are required, as per rule:styleguide:tables).*
 
 ### Exit Codes
 
-*(This section will formally document the tool's exit codes to aid in scripting and debugging, as per rule:styleguide:formal-syntax:20250720-001550-014).*
+*(This section will formally document the tool's exit codes to aid in scripting and debugging, as per rule:styleguide:formal-syntax).*
 
 ## Contributing
 
