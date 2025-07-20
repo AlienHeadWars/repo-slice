@@ -4,7 +4,9 @@ Automate the creation of streamlined, context-specific branches for your AI assi
 
 ## The Problem
 
-*(This section will describe the core user problem: managing large repository contexts for AI assistants and the manual effort involved).*
+As a project grows, the entire codebase quickly becomes too large to use as a single context for an AI assistant like a Gemini Gem. To work effectively, these assistants, each assigned to a specific role, need a streamlined and relevant slice of the repository.
+
+Manually creating and maintaining these separate, context-specific branches is a tedious and error-prone process that needs to be repeated every time the codebase changes.
 
 ## The Solution
 
