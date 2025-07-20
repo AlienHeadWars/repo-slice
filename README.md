@@ -10,7 +10,13 @@ Manually creating and maintaining these separate, context-specific branches is a
 
 ## The Solution
 
-*(This section will introduce repo-slice as the purpose-built solution and briefly explain its core function).*
+`repo-slice` is a simple, automation-focused CLI tool designed to solve this problem. It acts as the engine of a CI/CD pipeline that automatically maintains streamlined branches for your AI assistants.
+
+The workflow is straightforward:
+1.  **Define**: List the files and directories for a specific AI role in a simple `allow-list.txt` manifest.
+2.  **Slice**: In a CI/CD job, `repo-slice` reads the manifest and creates a clean, filtered copy of your repository.
+3.  **Push**: The job then pushes this filtered copy to a dedicated branch (e.g., `context/gem-ui-developer`).
+4.  **Configure**: Point your AI assistant at this branch, and it will always have the latest, relevant context without any manual updates.
 
 ## Core Features
 
