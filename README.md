@@ -1,6 +1,6 @@
 # repo-slice
 
-*(A concise, one-sentence summary that establishes the tool's context and purpose, as required by rule:styleguide:context:20250720-001550-007).*
+Automate the creation of streamlined, context-specific branches for your AI assistants.
 
 ## The Problem
 
