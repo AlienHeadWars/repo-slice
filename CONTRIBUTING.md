@@ -72,4 +72,11 @@ A clean, predictable, and consistent codebase is the foundation of our developme
 
 ## Documentation Standards
 
-*(This section will state that all documentation, including READMEs and code comments, must adhere to the project's "Internal Documentation Style Guide" to ensure clarity for both human and AI collaborators).*
+All project documentation, from the `README.md` to code comments and technical guides, must adhere to the project's **Internal Documentation Style Guide**. This ensures our knowledge base is clear for human developers and optimally structured for AI collaborators. 
+
+The core principles of this guide are:
+
+* **FAIR Principles**: All documentation must be Findable, Accessible, Interoperable, and Reusable by machines. 
+* **Write for the RAG Chunker**: Every page or section must be self-contained and understandable in isolation, as if it were the first thing a reader sees. 
+* **Prioritize Precision**: Language must be direct, explicit, and unambiguous to minimize the risk of misinterpretation by both humans and AI agents. 
+* **Use a Strict Hierarchy**: All documents must use a strict and sequential heading hierarchy (e.g., H1 → H2 → H3) to maintain a clear, logical structure. 
