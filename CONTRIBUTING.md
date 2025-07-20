@@ -63,7 +63,12 @@ Commits must be small, atomic, and represent a single logical change.  Avoid lar
 
 ## Coding Standards
 
-*(This section will codify the project's coding standards, including the "Why, Not What" philosophy for comments and the required Go tooling like `gofmt` and `golangci-lint` for automated style enforcement).*
+A clean, predictable, and consistent codebase is the foundation of our development process. We automate the enforcement of these standards to eliminate debate and allow our focus to remain on functionality and architecture. 
+
+* **Automated Formatting**: All Go code MUST be formatted with the standard `gofmt` tool.
+* **Linting**: We use `golangci-lint` for identifying and fixing problematic patterns in our code.  All code must pass the linter's checks before being committed. We will use tooling like pre-commit hooks to automate this enforcement wherever possible. 
+* **The "Why, Not What" Philosophy**: All comments and documentation must explain the 'why' behind the code, not the 'what' or 'when'.  The code itself explains what it's doing, and version control explains when it was changed. 
+* **GoDoc Standard**: All exported functions, types, and interfaces must have a GoDoc-style comment block.  The block must provide a brief, one-sentence summary of the element's purpose and detail its parameters and what it returns.  This is a non-negotiable requirement. 
 
 ## Documentation Standards
 
