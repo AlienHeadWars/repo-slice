@@ -20,7 +20,10 @@ The workflow is straightforward:
 
 ## Core Features
 
-*(This section will use a bulleted list to outline the key benefits of the tool, such as its declarative manifests and automation focus, as per rule:styleguide:lists:20250720-001550-008).*
+* **Declarative Manifests**: Instead of complex filter patterns, you use a simple, explicit list of files in a manifest. This is easier to read, maintain, and generate programmatically.
+* **Automation-Focused**: Designed from the ground up to be a reliable and portable tool for any CI/CD environment like GitHub Actions or GitLab CI.
+* **Branch-Ready Output**: Produces a clean directory structure ready to be committed to a new branch, unlike tools that generate a single text file for prompting.
+* **Extension Mapping**: Optionally remap file extensions during the copy process. This is useful for improving compatibility with tools that don't recognize certain extensions, such as renaming `.tsx` files to `.ts` for better LLM interpretation.
 
 ## Workflow Overview
 
