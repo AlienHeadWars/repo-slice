@@ -19,13 +19,47 @@ Our development process follows these steps:
 All work, without exception, must be done on a feature branch. This ensures that the `main` branch is always stable. The following rules must be adhered to:
 
 * **Branch Naming**: Branches must be named descriptively and reference the ticket they resolve.  The mandatory format is `[type]/[ticket-id]-short-description`. 
-    * **Example (feature):** `feature/TD-002-add-testing-framework` 
-    * **Example (bug fix):** `fix/BUG-001-prevent-self-target` 
+    * **Example (feature):** `feature/2-add-testing-framework` 
+    * **Example (bug fix):** `fix/1-prevent-self-target` 
 * **Short-Lived Branches**: Branches should be small in scope and short-lived.  They should be merged into `main` as soon as their single, focused task is complete and has been reviewed. 
 
 ## Commit Message Standard
 
-*(This section will define the Conventional Commits specification as the mandatory format for all commit messages).*
+To create an explicit and descriptive version history, we follow the **Conventional Commits specification**.  This is a mandatory requirement for all changes. 
+
+### Format
+
+A commit message must consist of a title and a body, separated by a blank line. 
+
+```
+<type>: <A short, imperative-tense description of the change>
+
+<A detailed explanation of the "why" behind the change. This body is
+required for all non-trivial changes.>
+
+<Signed-off-by: Author Name [author.email@dugoutsanddragons.com](mailto:author.email@dugoutsanddragons.com)>
+
+```
+
+* **The Title is the "What"**: The title should be short, in the present tense, and kept under 50 characters. 
+* **The Body is the "Why"**: The body is for providing context and explaining your reasoning.  It must be wrapped at 72 characters. 
+* **Sign-off Trailer**: Every commit must be signed off by its author.  This certifies that you have the right to submit the work and agree to the project's terms.  This can be added automatically by using the `-s` flag when committing (e.g., `git commit -s`). 
+
+### Commit Types
+
+The `<type>` in the title must be one of the following: 
+
+* **feat**: A new feature for the user. 
+* **fix**: A bug fix for the user. 
+* **chore**: Updates to build scripts, dependencies, or other non-user-facing changes. 
+* **docs**: Changes to documentation only. 
+* **style**: Formatting changes that do not affect the meaning of the code. 
+* **refactor**: A code change that neither fixes a bug nor adds a feature. 
+* **test**: Adding missing tests or correcting existing tests. 
+
+### Golden Rule: Atomic Commits
+
+Commits must be small, atomic, and represent a single logical change.  Avoid large, multi-purpose commits. 
 
 ## Coding Standards
 
