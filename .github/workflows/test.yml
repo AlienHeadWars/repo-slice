@@ -1,0 +1,24 @@
+name: Test Action
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test_action:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run local placeholder action
+        id: test-action
+        uses: ./ # This uses the action in the current repository
+        with:
+          manifest: './test-manifest.txt'
+          source: './test-source'
+          output: './test-output'
+
+      - name: Verify action ran
+        run: echo "Action ran successfully with test inputs."
