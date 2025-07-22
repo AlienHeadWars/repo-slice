@@ -23,6 +23,14 @@ All work, without exception, must be done on a feature branch. This ensures that
     * **Example (bug fix):** `fix/1-prevent-self-target` 
 * **Short-Lived Branches**: Branches should be small in scope and short-lived.  They should be merged into `main` as soon as their single, focused task is complete and has been reviewed. 
 
+## Environment Setup
+
+To ensure a consistent and reproducible development environment, this project uses a `dev.nix` file to define its dependencies.
+
+If you are working in a Nix-compatible environment like Firebase Studio, the required tools (e.g., Go, `golangci-lint`) will be automatically installed when you open the workspace. You do not need to install them manually.
+
+For all other environments, please ensure you have a recent version of Go and `golangci-lint` installed.
+
 ## Commit Message Standard
 
 To create an explicit and descriptive version history, we follow the **Conventional Commits specification**.  This is a mandatory requirement for all changes. 
