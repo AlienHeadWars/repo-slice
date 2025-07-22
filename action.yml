@@ -1,0 +1,28 @@
+# file: action.yml
+name: 'Repo Slice'
+author: 'AlienHeadwars'
+description: 'Slices a repository by creating a filtered copy based on a manifest file, for use in CI/CD automation.'
+
+inputs:
+  manifest:
+    description: 'Path to the "allow-list" file containing paths to include (one per line).'
+    required: true
+  source:
+    description: 'The source directory to read from.'
+    required: false
+    default: '.'
+  output:
+    description: 'The destination directory where the filtered copy will be created.'
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Run repo-slice
+      shell: bash
+      run: |
+        echo "--- Placeholder Action ---"
+        echo "Manifest: ${{ inputs.manifest }}"
+        echo "Source: ${{ inputs.source }}"
+        echo "Output: ${{ inputs.output }}"
+        echo "TODO: This step will be replaced with the logic to run the compiled Go binary."
