@@ -4,7 +4,16 @@ package main
 import "testing"
 
 func TestRun_ArgumentParsing(t *testing.T) {
-	// This test is currently a placeholder and is expected to fail
-	// until the argument parsing logic is implemented in run().
-	t.Fatal("Test not implemented: argument parsing needs to be verified.")
+	// Define the test arguments.
+	args := []string{
+		"--manifest", "test-manifest.txt",
+		"--output", "test-output",
+		"--source", "test-source",
+	}
+
+	// Run the function with the test arguments.
+	// A nil error indicates successful parsing.
+	if err := run(args); err != nil {
+		t.Errorf("run() with valid arguments failed: %v", err)
+	}
 }
