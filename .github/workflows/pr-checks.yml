@@ -35,7 +35,6 @@ jobs:
 
   coverage-report:
     name: "Code coverage report"
-    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     needs: test
     permissions:
@@ -47,4 +46,4 @@ jobs:
         uses: fgrosse/go-coverage-report@v1.1.1
         with:
           coverage-artifact-name: "code-coverage-report"
-          coverage-file-name: "coverage.txt"
+          github-baseline-workflow-ref: "main-ci.yml"
