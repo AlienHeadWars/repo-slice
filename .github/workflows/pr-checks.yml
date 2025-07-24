@@ -44,7 +44,8 @@ jobs:
       pull-requests: write
     steps:
       - name: Post coverage report
-        uses: fgrosse/go-coverage-report@v1.1.1
+        uses: fgrosse/go-coverage-report@v1.2.0
         with:
           coverage-artifact-name: "code-coverage-report"
           coverage-file-name: "coverage.txt"
+          github-baseline-workflow-ref: "main-ci.yml"
