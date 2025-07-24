@@ -5,10 +5,10 @@ import (
 	"flag"
 	"fmt"
 	"os"
+
+	"github.com/AlienHeadwars/repo-slice/internal/validate"
 )
 
-// Config holds the configuration options for the repo-slice tool,
-// parsed from command-line arguments.
 type Config struct {
 	ManifestPath string
 	SourcePath   string
@@ -24,12 +24,23 @@ func main() {
 
 // run executes the main logic of the application based on the provided arguments.
 func run(args []string) error {
-	// The config is currently unused but will be validated and used
-	// in subsequent features.
-	_, err := parseArgs(args)
+	parsedCfg, err := parseArgs(args)
 	if err != nil {
 		return err
 	}
+
+	// The `main` function is the composition root. Here we "inject" the
+	// real file system implementation into our validation logic.
+	fsys := validate.LiveFS{}
+	validationCfg := validate.Config{
+		SourcePath:   parsedCfg.SourcePath,
+		ManifestPath: parsedCfg.ManifestPath,
+	}
+
+	if err := validate.ValidateInputs(validationCfg, fsys); err != nil {
+		return err
+	}
+
 	return nil
 }
 
