@@ -1,22 +1,23 @@
-# file: .github/workflows/test.yml
-name: Test and Lint
+# file: .github/workflows/main-ci.yml
+name: Main CI
 
 on:
-  pull_request:
+  push:
     branches:
-      - main
+      - 'main'
 
 jobs:
-  test_and_lint:
+  test:
+    name: "Run tests and create baseline"
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Go
+      - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.22'
+          go-version: '1.22.3'
 
       - name: Run linter
         uses: golangci/golangci-lint-action@v6
