@@ -34,10 +34,10 @@ jobs:
           path: coverage.txt
 
       - name: Convert coverage to LCOV format
-        uses: jandelgado/gcov2lcov-action@v1.1
+        uses: jandelgado/gcov2lcov-action@v1.1.1
 
       - name: Post coverage report with annotations
-        uses: romeovs/lcov-reporter-action@v0.3.1
+        uses: romeovs/lcov-reporter-action@v0.4.0
         with:
           lcov-file: ./coverage.lcov
           github-token: ${{ secrets.GITHUB_TOKEN }}
