@@ -1,0 +1,35 @@
+# file: .github/workflows/main-ci.yml
+name: Main CI
+
+on:
+  push:
+    branches:
+      - 'main'
+
+jobs:
+  test:
+    name: "Run tests and create baseline"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22.3'
+
+      - name: Run linter
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: v1.59
+          args: --timeout=3m
+
+      - name: Run tests and generate coverage profile
+        run: go test -v -cover -coverprofile=coverage.txt ./...
+
+      - name: Archive code coverage results
+        uses: actions/upload-artifact@v4
+        with:
+          name: code-coverage-report
+          path: coverage.txt
