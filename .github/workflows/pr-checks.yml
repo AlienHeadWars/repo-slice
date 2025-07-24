@@ -35,12 +35,9 @@ jobs:
 
       - name: Convert coverage to LCOV format
         uses: jandelgado/gcov2lcov-action@v1.1
-        with:
-          infile: coverage.out
-          outfile: coverage.lcov
 
       - name: Post coverage report with annotations
-        uses: romeovs/lcov-reporter@v0.3.1
+        uses: romeovs/lcov-reporter-action@v0.3.1
         with:
           lcov-file: ./coverage.lcov
           github-token: ${{ secrets.GITHUB_TOKEN }}
