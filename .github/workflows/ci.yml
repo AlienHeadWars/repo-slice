@@ -1,0 +1,40 @@
+# file: .github/workflows/ci.yml
+name: CI
+
+on:
+  push:
+    branches:
+      - 'main'
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+jobs:
+  test_and_coverage:
+    name: "Test, Lint, and Coverage"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22.3'
+
+      - name: Run linter
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: v1.59
+          args: --timeout=3m
+
+      - name: Run tests and generate coverage profile
+        run: go test -v -coverprofile=coverage.out ./...
+
+      - name: Send coverage report to Coveralls
+        uses: coverallsapp/github-action@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          file: coverage.out
+          coveralls-repo-token: ${{ secrets.COVERALLS_REPO_TOKEN }}

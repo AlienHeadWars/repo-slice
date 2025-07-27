@@ -1,5 +1,8 @@
 # repo-slice
 
+[![Coverage Status](https://coveralls.io/repos/github/AlienHeadwars/repo-slice/badge.svg?branch=main)](https://coveralls.io/github/AlienHeadwars/repo-slice?branch=main)
+
+
 Automate the creation of streamlined, context-specific branches for your AI assistants.
 
 ## The Problem
