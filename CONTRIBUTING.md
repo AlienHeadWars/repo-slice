@@ -76,7 +76,22 @@ A clean, predictable, and consistent codebase is the foundation of our developme
 * **Automated Formatting**: All Go code MUST be formatted with the standard `gofmt` tool.
 * **Linting**: We use `golangci-lint` for identifying and fixing problematic patterns in our code.  All code must pass the linter's checks before being committed. We will use tooling like pre-commit hooks to automate this enforcement wherever possible. 
 * **The "Why, Not What" Philosophy**: All comments and documentation must explain the 'why' behind the code, not the 'what' or 'when'.  The code itself explains what it's doing, and version control explains when it was changed. 
-* **GoDoc Standard**: All exported functions, types, and interfaces must have a GoDoc-style comment block.  The block must provide a brief, one-sentence summary of the element's purpose and detail its parameters and what it returns.  This is a non-negotiable requirement. 
+* **GoDoc Standard**: All exported functions, types, and interfaces must have a GoDoc-style comment block.  The block must provide a brief, one-sentence summary of the element's purpose and detail its parameters and what it returns.  This is a non-negotiable requirement.
+
+## Testing Standards
+
+This project separates fast-running **unit tests** from slower **integration tests** that interact with the file system.
+
+* **Unit Tests**: These are located in `_test.go` files and do not require any special configuration to run.
+* **Integration Tests**: These are located in `_integration_test.go` files and are marked with a `//go:build integration` build tag.
+
+To run only the unit tests, use the standard command:
+`go test -v ./...`
+
+To run all tests, including integration tests, use the `-tags` flag:
+`go test -v ./... -tags=integration`
+
+Our CI pipeline is configured to run the complete test suite.
 
 ## Documentation Standards
 
