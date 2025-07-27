@@ -18,11 +18,11 @@ This document outlines the development milestones to get `repo-slice` to its fir
 
 **Goal**: To build a fully functional and rigorously tested CLI tool using Test-Driven Development.
 
-- Set up a CI pipeline to automatically run tests and a linter.
-- Write tests for and then implement CLI argument handling.
-- Write tests for and then implement input validation logic.
-- Write tests for and then implement the `rsync` command execution.
-- Write tests for and then implement the extension mapping feature.
+- [x] Set up a CI pipeline to automatically run tests and a linter.
+- [ ] Write tests for and then implement CLI argument handling.
+- [x] Write tests for and then implement input validation logic.
+- [ ] Write tests for and then implement the `rsync` command execution.
+- [ ] Write tests for and then implement the extension mapping feature.
 
 ## Milestone 3: Release & GitHub Action
 

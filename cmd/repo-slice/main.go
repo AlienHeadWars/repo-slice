@@ -1,10 +1,21 @@
 // file: cmd/repo-slice/main.go
+
+/*
+Repo-slice is a command-line tool that automates the creation of
+streamlined, context-specific branches from a larger repository.
+
+It reads a manifest file (an "allow-list") and creates a clean,
+filtered copy of a source directory, which can then be pushed to a
+dedicated branch for use by AI assistants.
+*/
 package main
 
 import (
 	"flag"
 	"fmt"
 	"os"
+
+	"github.com/AlienHeadwars/repo-slice/internal/validate"
 )
 
 // Config holds the configuration options for the repo-slice tool,
@@ -24,16 +35,27 @@ func main() {
 
 // run executes the main logic of the application based on the provided arguments.
 func run(args []string) error {
-	// The config is currently unused but will be validated and used
-	// in subsequent features.
-	_, err := parseArgs(args)
+	parsedCfg, err := parseArgs(args)
 	if err != nil {
 		return err
 	}
+
+	fsys := validate.LiveFS{}
+	validationCfg := validate.Config{
+		SourcePath:   parsedCfg.SourcePath,
+		ManifestPath: parsedCfg.ManifestPath,
+	}
+
+	if err := validate.ValidateInputs(validationCfg, fsys); err != nil {
+		return err
+	}
+
 	return nil
 }
 
-// parseArgs parses the command-line arguments and returns a Config struct.
+// parseArgs parses the command-line arguments from a string slice and returns
+// a populated Config struct. It returns an error if the arguments cannot be
+// parsed.
 func parseArgs(args []string) (Config, error) {
 	var cfg Config
 	fs := flag.NewFlagSet("repo-slice", flag.ContinueOnError)
@@ -42,8 +64,6 @@ func parseArgs(args []string) (Config, error) {
 	fs.StringVar(&cfg.SourcePath, "source", ".", "The source directory to read from")
 	fs.StringVar(&cfg.OutputPath, "output", "", "The destination directory (required)")
 
-	// This call to Parse will handle parsing the arguments and printing usage
-	// information if -h or -help is provided.
 	if err := fs.Parse(args); err != nil {
 		return Config{}, err
 	}
