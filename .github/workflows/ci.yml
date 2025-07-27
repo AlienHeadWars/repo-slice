@@ -21,13 +21,12 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.22.3'
+          go-version: '1.24.5'
 
       - name: Run linter
-        uses: golangci/golangci-lint-action@v6
+        uses: golangci/golangci-lint-action@v8
         with:
-          version: v1.59
-          args: --timeout=3m
+          version: v2.3.0
 
       - name: Run tests and generate coverage profile
         run: go test -v -coverprofile=coverage.out ./...
@@ -36,5 +35,5 @@ jobs:
         uses: coverallsapp/github-action@v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          file: coverage.out
           coveralls-repo-token: ${{ secrets.COVERALLS_REPO_TOKEN }}
+          file: coverage.out
