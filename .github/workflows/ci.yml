@@ -26,8 +26,7 @@ jobs:
       - name: Run linter
         uses: golangci/golangci-lint-action@v6
         with:
-          version: v1.59
-          args: --timeout=3m
+          version: v1.59.1
 
       - name: Run tests and generate coverage profile
         run: go test -v -coverprofile=coverage.out ./...
