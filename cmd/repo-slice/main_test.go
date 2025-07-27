@@ -7,6 +7,17 @@ import (
 	"testing"
 )
 
+const (
+	testDirSource    = "valid-source"
+	testFileManifest = "valid-manifest.txt"
+	testFileSource   = "source-is-a-file"
+	testFileOutput   = "test-output"
+
+	flagSource   = "--source"
+	flagManifest = "--manifest"
+	flagOutput   = "--output"
+)
+
 // setupTestFS creates a temporary directory structure for testing.
 // It returns the root directory path and a cleanup function.
 func setupTestFS(t *testing.T) (string, func()) {
@@ -16,18 +27,15 @@ func setupTestFS(t *testing.T) (string, func()) {
 		t.Fatalf("failed to create temp dir: %v", err)
 	}
 
-	// Create a valid source directory
-	if err := os.Mkdir(filepath.Join(rootDir, "valid-source"), 0755); err != nil {
-		t.Fatalf("failed to create source  dir: %v", err)
+	if err := os.Mkdir(filepath.Join(rootDir, testDirSource), 0755); err != nil {
+		t.Fatalf("failed to create source dir: %v", err)
 	}
 
-	// Create a valid manifest file
-	if err := os.WriteFile(filepath.Join(rootDir, "valid-manifest.txt"), []byte(""), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(rootDir, testFileManifest), []byte(""), 0644); err != nil {
 		t.Fatalf("failed to create manifest file: %v", err)
 	}
 
-	// Create a file to act as an invalid source path
-	if err := os.WriteFile(filepath.Join(rootDir, "source-is-a-file"), []byte(""), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(rootDir, testFileSource), []byte(""), 0644); err != nil {
 		t.Fatalf("failed to create source file: %v", err)
 	}
 
@@ -38,7 +46,10 @@ func setupTestFS(t *testing.T) (string, func()) {
 	return rootDir, cleanup
 }
 
-func TestRun_Validation(t *testing.T) {
+// TestRunValidation is an integration test for the main run function. It verifies
+// that the application correctly handles valid and invalid command-line
+// arguments by checking if errors are returned appropriately.
+func TestRunValidation(t *testing.T) {
 	rootDir, cleanup := setupTestFS(t)
 	defer cleanup()
 
@@ -49,22 +60,22 @@ func TestRun_Validation(t *testing.T) {
 	}{
 		{
 			name:    "Valid paths",
-			args:    []string{"--source", filepath.Join(rootDir, "valid-source"), "--manifest", filepath.Join(rootDir, "valid-manifest.txt"), "--output", "test-output"},
+			args:    []string{flagSource, filepath.Join(rootDir, testDirSource), flagManifest, filepath.Join(rootDir, testFileManifest), flagOutput, testFileOutput},
 			wantErr: false,
 		},
 		{
 			name:    "Source does not exist",
-			args:    []string{"--source", filepath.Join(rootDir, "non-existent"), "--manifest", filepath.Join(rootDir, "valid-manifest.txt"), "--output", "test-output"},
+			args:    []string{flagSource, filepath.Join(rootDir, "non-existent"), flagManifest, filepath.Join(rootDir, testFileManifest), flagOutput, testFileOutput},
 			wantErr: true,
 		},
 		{
 			name:    "Source is a file, not a directory",
-			args:    []string{"--source", filepath.Join(rootDir, "source-is-a-file"), "--manifest", filepath.Join(rootDir, "valid-manifest.txt"), "--output", "test-output"},
+			args:    []string{flagSource, filepath.Join(rootDir, testFileSource), flagManifest, filepath.Join(rootDir, testFileManifest), flagOutput, testFileOutput},
 			wantErr: true,
 		},
 		{
 			name:    "Manifest does not exist",
-			args:    []string{"--source", filepath.Join(rootDir, "valid-source"), "--manifest", filepath.Join(rootDir, "non-existent.txt"), "--output", "test-output"},
+			args:    []string{flagSource, filepath.Join(rootDir, testDirSource), flagManifest, filepath.Join(rootDir, "non-existent.txt"), flagOutput, testFileOutput},
 			wantErr: true,
 		},
 	}

@@ -11,17 +11,18 @@ import (
 	"testing"
 )
 
-func TestLiveFS_Stat(t *testing.T) {
-	// Create a temporary file to test against.
+// TestLiveFSStat is an integration test for the LiveFS implementation.
+// It verifies that the Stat method correctly interacts with the operating
+// system's file system by checking for both existing and non-existent files.
+func TestLiveFSStat(t *testing.T) {
 	tmpFile, err := os.CreateTemp("", "test-stat-*")
 	if err != nil {
 		t.Fatalf("failed to create temp file: %v", err)
 	}
-	defer os.Remove(tmpFile.Name()) // Clean up the file after the test.
+	defer os.Remove(tmpFile.Name())
 
 	fsys := LiveFS{}
 
-	// Test case 1: A file that exists.
 	t.Run("file exists", func(t *testing.T) {
 		info, err := fsys.Stat(tmpFile.Name())
 		if err != nil {
@@ -32,7 +33,6 @@ func TestLiveFS_Stat(t *testing.T) {
 		}
 	})
 
-	// Test case 2: A file that does not exist.
 	t.Run("file does not exist", func(t *testing.T) {
 		_, err := fsys.Stat("non-existent-file-path")
 		if err == nil {

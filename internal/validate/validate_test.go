@@ -7,6 +7,13 @@ import (
 	"time"
 )
 
+const (
+	validSourcePath      = "valid-source"
+	validManifestPath    = "valid-manifest.txt"
+	invalidSourceAsFile  = "path-is-a-file"
+	invalidManifestAsDir = "path-is-a-dir"
+)
+
 // mockFileInfo implements fs.FileInfo for our mock file system.
 type mockFileInfo struct {
 	name  string
@@ -33,14 +40,17 @@ func (m mockFS) Stat(name string) (fs.FileInfo, error) {
 	return nil, fs.ErrNotExist
 }
 
+// TestValidateInputs is a unit test that checks the input validation logic.
+// It uses a mock file system to simulate various scenarios, such as missing
+// files or incorrect path types, ensuring the validation function returns
+// errors when expected.
 func TestValidateInputs(t *testing.T) {
-	// Setup a mock file system state
 	fsys := mockFS{
 		files: map[string]mockFileInfo{
-			"valid-source":      {name: "valid-source", isDir: true},
-			"valid-manifest.txt": {name: "valid-manifest.txt", isDir: false},
-			"path-is-a-file":    {name: "path-is-a-file", isDir: false},
-			"path-is-a-dir":     {name: "path-is-a-dir", isDir: true},
+			validSourcePath:      {name: validSourcePath, isDir: true},
+			validManifestPath:    {name: validManifestPath, isDir: false},
+			invalidSourceAsFile:  {name: invalidSourceAsFile, isDir: false},
+			invalidManifestAsDir: {name: invalidManifestAsDir, isDir: true},
 		},
 	}
 
@@ -49,11 +59,11 @@ func TestValidateInputs(t *testing.T) {
 		cfg     Config
 		wantErr bool
 	}{
-		{"Valid paths", Config{SourcePath: "valid-source", ManifestPath: "valid-manifest.txt"}, false},
-		{"Source does not exist", Config{SourcePath: "non-existent", ManifestPath: "valid-manifest.txt"}, true},
-		{"Source is a file", Config{SourcePath: "path-is-a-file", ManifestPath: "valid-manifest.txt"}, true},
-		{"Manifest does not exist", Config{SourcePath: "valid-source", ManifestPath: "non-existent.txt"}, true},
-		{"Manifest is a directory", Config{SourcePath: "valid-source", ManifestPath: "path-is-a-dir"}, true},
+		{"Valid paths", Config{SourcePath: validSourcePath, ManifestPath: validManifestPath}, false},
+		{"Source does not exist", Config{SourcePath: "non-existent", ManifestPath: validManifestPath}, true},
+		{"Source is a file", Config{SourcePath: invalidSourceAsFile, ManifestPath: validManifestPath}, true},
+		{"Manifest does not exist", Config{SourcePath: validSourcePath, ManifestPath: "non-existent.txt"}, true},
+		{"Manifest is a directory", Config{SourcePath: validSourcePath, ManifestPath: invalidManifestAsDir}, true},
 	}
 
 	for _, tc := range testCases {
