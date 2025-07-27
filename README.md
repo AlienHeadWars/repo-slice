@@ -4,6 +4,13 @@
 
 Automate the creation of streamlined, context-specific branches for your AI assistants.
 
+## 🚧 Development Status
+
+**This project is currently in active development and is not yet ready for production use.**
+
+We are in the process of building out the core features as outlined in our [Project Roadmap](ROADMAP.md). We welcome feedback and contributions! If you're interested in helping, please see our [Contributing Guide](CONTRIBUTING.md).
+
+
 ## The Problem
 
 As a project grows, the entire codebase quickly becomes too large to use as a single context for an AI assistant like a Gemini Gem. To work effectively, these assistants, each assigned to a specific role, need a streamlined and relevant slice of the repository.
