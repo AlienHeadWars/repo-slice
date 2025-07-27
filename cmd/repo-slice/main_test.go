@@ -18,14 +18,24 @@ const (
 	flagOutput   = "--output"
 )
 
-// setupTestFS creates a temporary directory structure for testing.
-// It returns the root directory path and a cleanup function.
-func setupTestFS(t *testing.T) (string, func()) {
+// setupTestFS creates a temporary directory structure for testing. It registers
+// a cleanup function with the test to automatically remove the directory
+// when the test completes. It returns the root path of the created directory.
+func setupTestFS(t *testing.T) string {
 	t.Helper()
 	rootDir, err := os.MkdirTemp("", "repo-slice-test-*")
 	if err != nil {
 		t.Fatalf("failed to create temp dir: %v", err)
 	}
+
+	// t.Cleanup registers a function to be called when the test
+	// and all its subtests complete. This is the idiomatic way
+	// to handle test cleanup.
+	t.Cleanup(func() {
+		if err := os.RemoveAll(rootDir); err != nil {
+			t.Fatalf("failed to remove temp dir: %v", err)
+		}
+	})
 
 	if err := os.Mkdir(filepath.Join(rootDir, testDirSource), 0755); err != nil {
 		t.Fatalf("failed to create source dir: %v", err)
@@ -39,19 +49,14 @@ func setupTestFS(t *testing.T) (string, func()) {
 		t.Fatalf("failed to create source file: %v", err)
 	}
 
-	cleanup := func() {
-		os.RemoveAll(rootDir)
-	}
-
-	return rootDir, cleanup
+	return rootDir
 }
 
 // TestRunValidation is an integration test for the main run function. It verifies
 // that the application correctly handles valid and invalid command-line
 // arguments by checking if errors are returned appropriately.
 func TestRunValidation(t *testing.T) {
-	rootDir, cleanup := setupTestFS(t)
-	defer cleanup()
+	rootDir := setupTestFS(t)
 
 	testCases := []struct {
 		name    string
