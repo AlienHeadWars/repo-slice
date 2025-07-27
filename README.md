@@ -27,6 +27,7 @@ The workflow is straightforward:
 * **Branch-Ready Output**: Produces a clean directory structure ready to be committed to a new branch, unlike tools that generate a single text file for prompting.
 * **Extension Mapping**: Optionally remap file extensions during the copy process. This is useful for improving compatibility with tools that don't recognize certain extensions, such as renaming `.tsx` files to `.ts` for better LLM interpretation.
 
+
 ## Workflow Overview
 
 `repo-slice` is designed to be the engine of a fully automated CI/CD pipeline. The typical workflow is as follows:
@@ -60,6 +61,17 @@ The workflow is straightforward:
 
 *(This section will formally document the tool's exit codes to aid in scripting and debugging, as per rule:styleguide:formal-syntax).*
 
+
+## Quality Assurance
+
+This project is committed to a high standard of code quality and security. To ensure this, we have integrated the following tools into our development process:
+
+* **Coveralls**: For tracking test coverage on every pull request and ensuring it remains high.
+* **SonarCloud**: For continuous static analysis to detect bugs, vulnerabilities, and code smells.
+* **Snyk**: For scanning dependencies against a database of known open-source vulnerabilities.
+* **Dependabot**: For automatically keeping our dependencies up-to-date.
+
 ## Contributing
 
 *(This section will briefly explain the project's openness to contributions and link directly to the CONTRIBUTING.md file for detailed standards and procedures).*
+
