@@ -2,6 +2,7 @@
 
 [![Coverage Status](https://coveralls.io/repos/github/AlienHeadwars/repo-slice/badge.svg?branch=main)](https://coveralls.io/github/AlienHeadwars/repo-slice?branch=main)
 
+[![Quality gate](https://sonarcloud.io/api/project_badges/quality_gate?project=AlienHeadWars_repo-slice)](https://sonarcloud.io/summary/new_code?id=AlienHeadWars_repo-slice)
 
 Automate the creation of streamlined, context-specific branches for your AI assistants.
 
