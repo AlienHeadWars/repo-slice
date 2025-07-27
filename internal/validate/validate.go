@@ -1,4 +1,7 @@
 // file: internal/validate/validate.go
+
+// Package validate provides functions for validating the input configuration
+// for the repo-slice tool.
 package validate
 
 import (

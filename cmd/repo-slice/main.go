@@ -1,4 +1,13 @@
 // file: cmd/repo-slice/main.go
+
+/*
+Repo-slice is a command-line tool that automates the creation of
+streamlined, context-specific branches from a larger repository.
+
+It reads a manifest file (an "allow-list") and creates a clean,
+filtered copy of a source directory, which can then be pushed to a
+dedicated branch for use by AI assistants.
+*/
 package main
 
 import (
@@ -9,6 +18,8 @@ import (
 	"github.com/AlienHeadwars/repo-slice/internal/validate"
 )
 
+// Config holds the configuration options for the repo-slice tool,
+// parsed from command-line arguments.
 type Config struct {
 	ManifestPath string
 	SourcePath   string
@@ -29,8 +40,6 @@ func run(args []string) error {
 		return err
 	}
 
-	// The `main` function is the composition root. Here we "inject" the
-	// real file system implementation into our validation logic.
 	fsys := validate.LiveFS{}
 	validationCfg := validate.Config{
 		SourcePath:   parsedCfg.SourcePath,
@@ -44,7 +53,9 @@ func run(args []string) error {
 	return nil
 }
 
-// parseArgs parses the command-line arguments and returns a Config struct.
+// parseArgs parses the command-line arguments from a string slice and returns
+// a populated Config struct. It returns an error if the arguments cannot be
+// parsed.
 func parseArgs(args []string) (Config, error) {
 	var cfg Config
 	fs := flag.NewFlagSet("repo-slice", flag.ContinueOnError)
@@ -53,8 +64,6 @@ func parseArgs(args []string) (Config, error) {
 	fs.StringVar(&cfg.SourcePath, "source", ".", "The source directory to read from")
 	fs.StringVar(&cfg.OutputPath, "output", "", "The destination directory (required)")
 
-	// This call to Parse will handle parsing the arguments and printing usage
-	// information if -h or -help is provided.
 	if err := fs.Parse(args); err != nil {
 		return Config{}, err
 	}
