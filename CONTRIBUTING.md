@@ -12,7 +12,7 @@ Our development process follows these steps:
 2.  **Create a Branch**: Create a new branch from `main` named according to our Branching Strategy.
 3.  **Commit Your Work**: Make small, atomic commits that follow our Commit Message Standard.
 4.  **Open a Pull Request**: When the work is complete, open a Pull Request to merge your branch into `main`.
-5.  **Code Review**: The PR must be reviewed and approved by at least one other developer before it can be merged. The reviewer is responsible for ensuring the changes adhere to all project standards.
+5.  **Code Review**: The PR must be reviewed and approved by at least one other developer before it can be merged. The reviewer is responsible for ensuring the changes adhere to all project standards. **All pull requests will be automatically scanned by SonarCloud for code quality and Coveralls for test coverage.**
 
 ## Branching Strategy
 
