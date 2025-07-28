@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/AlienHeadwars/repo-slice/internal/slicer"
 	"github.com/AlienHeadwars/repo-slice/internal/validate"
 )
 
@@ -35,21 +36,34 @@ func main() {
 
 // run executes the main logic of the application based on the provided arguments.
 func run(args []string) error {
-	parsedCfg, err := parseArgs(args)
+	cfg, err := parseArgs(args)
 	if err != nil {
 		return err
 	}
 
-	fsys := validate.LiveFS{}
+	fsys := &validate.LiveFS{}
 	validationCfg := validate.Config{
-		SourcePath:   parsedCfg.SourcePath,
-		ManifestPath: parsedCfg.ManifestPath,
+		SourcePath:   cfg.SourcePath,
+		ManifestPath: cfg.ManifestPath,
 	}
 
 	if err := validate.ValidateInputs(validationCfg, fsys); err != nil {
 		return err
 	}
 
+	// Parse the manifest file.
+	files, err := fsys.ParseManifest(cfg.ManifestPath)
+	if err != nil {
+		return fmt.Errorf("failed to parse manifest: %w", err)
+	}
+
+	// Execute the slice operation.
+	executor := slicer.CmdExecutor{}
+	if err := slicer.Slice(cfg.SourcePath, cfg.OutputPath, files, executor); err != nil {
+		return fmt.Errorf("failed to execute slice operation: %w", err)
+	}
+
+	fmt.Printf("Successfully created repository slice in %s\n", cfg.OutputPath)
 	return nil
 }
 
