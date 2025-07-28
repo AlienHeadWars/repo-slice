@@ -15,11 +15,12 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/AlienHeadwars/repo-slice/internal/slicer"
 	"github.com/AlienHeadwars/repo-slice/internal/validate"
+	"github.comcom/AlienHeadwars/repo-slice/internal/slicer"
 )
 
-// ... (Config struct remains the same) ...
+// Config holds the configuration options for the repo-slice tool,
+// parsed from command-line arguments.
 type Config struct {
 	ManifestPath string
 	SourcePath   string
@@ -34,7 +35,7 @@ func main() {
 }
 
 // run executes the main logic of the application based on the provided arguments.
-func run(args []string) error {
+func run(args []string) (err error) { // Named return value 'err'
 	cfg, err := parseArgs(args)
 	if err != nil {
 		return err
@@ -50,20 +51,23 @@ func run(args []string) error {
 		return err
 	}
 
-	// Open the manifest file to get an io.Reader.
 	manifestFile, err := os.Open(cfg.ManifestPath)
 	if err != nil {
 		return fmt.Errorf("could not open manifest file: %w", err)
 	}
-	defer manifestFile.Close()
+	// The deferred function handles closing the file. If an error occurs during
+	// Close and no other error has already been set, it will be returned.
+	defer func() {
+		if closeErr := manifestFile.Close(); err == nil {
+			err = closeErr
+		}
+	}()
 
-	// Parse the manifest file.
 	files, err := slicer.ParseManifest(manifestFile)
 	if err != nil {
 		return fmt.Errorf("failed to parse manifest: %w", err)
 	}
 
-	// Execute the slice operation.
 	executor := slicer.CmdExecutor{}
 	if err := slicer.Slice(cfg.SourcePath, cfg.OutputPath, files, executor); err != nil {
 		return fmt.Errorf("failed to execute slice operation: %w", err)
@@ -73,7 +77,9 @@ func run(args []string) error {
 	return nil
 }
 
-// ... (parseArgs function remains the same) ...
+// parseArgs parses the command-line arguments from a string slice and returns
+// a populated Config struct. It returns an error if the arguments cannot be
+// parsed.
 func parseArgs(args []string) (Config, error) {
 	var cfg Config
 	fs := flag.NewFlagSet("repo-slice", flag.ContinueOnError)

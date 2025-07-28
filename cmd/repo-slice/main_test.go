@@ -28,13 +28,15 @@ func setupTestFS(t *testing.T) string {
 		t.Fatalf("failed to create temp dir: %v", err)
 	}
 
+	// t.Cleanup registers a function to be called when the test
+	// and all its subtests complete. This is the idiomatic way
+	// to handle test cleanup.
 	t.Cleanup(func() {
 		if err := os.RemoveAll(rootDir); err != nil {
 			t.Fatalf("failed to remove temp dir: %v", err)
 		}
 	})
 
-	// Create source directory and files
 	sourcePath := filepath.Join(rootDir, testDirSource)
 	if err := os.Mkdir(sourcePath, 0755); err != nil {
 		t.Fatalf("failed to create source dir: %v", err)
@@ -46,13 +48,11 @@ func setupTestFS(t *testing.T) string {
 		t.Fatalf("failed to create b.txt: %v", err)
 	}
 
-	// Create manifest file with content
 	manifestContent := "a.txt\n"
 	if err := os.WriteFile(filepath.Join(rootDir, testFileManifest), []byte(manifestContent), 0644); err != nil {
 		t.Fatalf("failed to create manifest file: %v", err)
 	}
 
-	// Create a file to act as an invalid source path
 	if err := os.WriteFile(filepath.Join(rootDir, testFileSource), []byte(""), 0644); err != nil {
 		t.Fatalf("failed to create source file: %v", err)
 	}

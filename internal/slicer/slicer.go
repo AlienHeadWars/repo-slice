@@ -61,7 +61,14 @@ func Slice(source, output string, files []string, exec Executor) error {
 	if err != nil {
 		return fmt.Errorf("failed to create temporary manifest file: %w", err)
 	}
-	defer os.Remove(tmpFile.Name())
+	// The deferred function now checks the error from os.Remove.
+	defer func() {
+		if err := os.Remove(tmpFile.Name()); err != nil {
+			// Log the error to stderr, as we can't return it here without
+			// potentially shadowing the main error from the rsync command.
+			fmt.Fprintf(os.Stderr, "warning: failed to remove temporary file %s: %v\n", tmpFile.Name(), err)
+		}
+	}()
 
 	if _, err := tmpFile.WriteString(strings.Join(files, "\n")); err != nil {
 		return fmt.Errorf("failed to write to temporary manifest file: %w", err)
@@ -71,11 +78,11 @@ func Slice(source, output string, files []string, exec Executor) error {
 	}
 
 	args := []string{
-		"-a", // Use archive mode, which implies recursion.
+		"-a",
 		"--include-from=" + tmpFile.Name(),
-		"--include=*/", // Ensure directories are traversed.
-		"--exclude=*",  // Exclude all other files.
-		".",            // The source is the current directory.
+		"--include=*/",
+		"--exclude=*",
+		".",
 		output,
 	}
 
