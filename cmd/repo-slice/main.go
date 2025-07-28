@@ -14,9 +14,8 @@ import (
 	"flag"
 	"fmt"
 	"os"
-
+	"github.com/AlienHeadwars/repo-slice/internal/slicer"
 	"github.com/AlienHeadwars/repo-slice/internal/validate"
-	"github.comcom/AlienHeadwars/repo-slice/internal/slicer"
 )
 
 // Config holds the configuration options for the repo-slice tool,
