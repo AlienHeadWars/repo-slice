@@ -4,40 +4,44 @@ package slicer
 
 import (
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
 )
 
-// liveExecutor is a real implementation of the Executor interface.
-type liveExecutor struct{}
-
-func (e liveExecutor) Run(workDir, command string, args ...string) error {
-	cmd := exec.Command(command, args...)
-	cmd.Dir = workDir
-	return cmd.Run()
-}
-
 // TestCmdExecutor_RunFails is an integration test for the CmdExecutor that
-// verifies its error handling.
+// verifies its error handling for both invalid flags and permission errors.
 func TestCmdExecutor_RunFails(t *testing.T) {
 	executor := CmdExecutor{}
-	// Execute a command that is guaranteed to fail.
-	err := executor.Run(".", "rsync", "--non-existent-flag")
 
-	if err == nil {
-		t.Fatal("CmdExecutor.Run() did not return an error for a failing command")
-	}
+	t.Run("invalid flag", func(t *testing.T) {
+		err := executor.Run(".", "rsync", "--non-existent-flag")
+		if err == nil {
+			t.Fatal("CmdExecutor.Run() did not return an error for a failing command")
+		}
+		if !strings.Contains(err.Error(), "STDERR") {
+			t.Error("Error message from failed command did not include STDERR")
+		}
+	})
 
-	// Verify that the error message contains the stderr from the command.
-	if !strings.Contains(err.Error(), "STDERR") {
-		t.Error("Error message from failed command did not include STDERR")
-	}
+	t.Run("permission denied", func(t *testing.T) {
+		unwritableDir, err := os.MkdirTemp("", "unwritable-*")
+		if err != nil {
+			t.Fatalf("Failed to create temp dir: %v", err)
+		}
+		defer os.RemoveAll(unwritableDir)
+		if err := os.Chmod(unwritableDir, 0555); err != nil {
+			t.Fatalf("Failed to chmod temp dir: %v", err)
+		}
+
+		err = executor.Run(".", "touch", filepath.Join(unwritableDir, "test.txt"))
+		if err == nil {
+			t.Fatal("CmdExecutor.Run() did not return an error for a permission denied scenario")
+		}
+	})
 }
 
 func TestSliceIntegration(t *testing.T) {
-	// ... (test setup remains the same) ...
 	sourceDir, err := os.MkdirTemp("", "source-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp source dir: %v", err)
@@ -57,13 +61,13 @@ func TestSliceIntegration(t *testing.T) {
 
 	filesToCopy := []string{"a.txt", "subdir/c.txt"}
 
-	executor := liveExecutor{}
+	// Use the real CmdExecutor for the integration test.
+	executor := CmdExecutor{}
 	err = Slice(sourceDir, outputDir, filesToCopy, executor)
 	if err != nil {
 		t.Fatalf("Slice() failed during integration test: %v", err)
 	}
 
-	// ... (assertions remain the same) ...
 	if _, err := os.Stat(filepath.Join(outputDir, "a.txt")); os.IsNotExist(err) {
 		t.Error("Expected file 'a.txt' was not found in the output directory")
 	}

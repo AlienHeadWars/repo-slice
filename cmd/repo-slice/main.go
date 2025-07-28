@@ -1,5 +1,4 @@
 // file: cmd/repo-slice/main.go
-
 /*
 Repo-slice is a command-line tool that automates the creation of
 streamlined, context-specific branches from a larger repository.
@@ -14,6 +13,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+
 	"github.com/AlienHeadwars/repo-slice/internal/slicer"
 	"github.com/AlienHeadwars/repo-slice/internal/validate"
 )
@@ -27,14 +27,16 @@ type Config struct {
 }
 
 func main() {
-	if err := run(os.Args[1:]); err != nil {
+	// The real command executor is created here and passed to the run function.
+	executor := slicer.CmdExecutor{}
+	if err := run(os.Args[1:], executor); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }
 
 // run executes the main logic of the application based on the provided arguments.
-func run(args []string) (err error) { // Named return value 'err'
+func run(args []string, exec slicer.Executor) (err error) {
 	cfg, err := parseArgs(args)
 	if err != nil {
 		return err
@@ -54,8 +56,6 @@ func run(args []string) (err error) { // Named return value 'err'
 	if err != nil {
 		return fmt.Errorf("could not open manifest file: %w", err)
 	}
-	// The deferred function handles closing the file. If an error occurs during
-	// Close and no other error has already been set, it will be returned.
 	defer func() {
 		if closeErr := manifestFile.Close(); err == nil {
 			err = closeErr
@@ -67,8 +67,7 @@ func run(args []string) (err error) { // Named return value 'err'
 		return fmt.Errorf("failed to parse manifest: %w", err)
 	}
 
-	executor := slicer.CmdExecutor{}
-	if err := slicer.Slice(cfg.SourcePath, cfg.OutputPath, files, executor); err != nil {
+	if err := slicer.Slice(cfg.SourcePath, cfg.OutputPath, files, exec); err != nil {
 		return fmt.Errorf("failed to execute slice operation: %w", err)
 	}
 
@@ -76,9 +75,7 @@ func run(args []string) (err error) { // Named return value 'err'
 	return nil
 }
 
-// parseArgs parses the command-line arguments from a string slice and returns
-// a populated Config struct. It returns an error if the arguments cannot be
-// parsed.
+// parseArgs parses the command-line arguments and returns a populated Config struct.
 func parseArgs(args []string) (Config, error) {
 	var cfg Config
 	fs := flag.NewFlagSet("repo-slice", flag.ContinueOnError)

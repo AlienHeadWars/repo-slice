@@ -21,21 +21,23 @@ type Executor interface {
 type CmdExecutor struct{}
 
 // Run executes a command from the given working directory. It captures stderr
-// and includes it in the error message if the command fails or produces any
-// output on stderr.
+// and treats the command as failed if it returns a non-zero exit code OR if
+// it produces any output on the stderr stream.
 func (e CmdExecutor) Run(workDir, command string, args ...string) error {
 	var stderr bytes.Buffer
 	cmd := exec.Command(command, args...)
-	cmd.Dir = workDir // Set the command's working directory.
+	cmd.Dir = workDir
 	cmd.Stderr = &stderr
 
 	err := cmd.Run()
-	// Treat any output on stderr as an error, even if the exit code is 0.
-	if stderr.Len() > 0 {
+
+	// rsync can exit with code 0 but still report errors (e.g., permission denied)
+	// on stderr. We must treat any stderr output as a failure.
+	if err == nil && stderr.Len() > 0 {
 		return fmt.Errorf("command produced stderr output:\n%s", stderr.String())
 	}
 	if err != nil {
-		return fmt.Errorf("command failed: %w", err)
+		return fmt.Errorf("command failed with exit code: %w\nSTDERR:\n%s", err, stderr.String())
 	}
 
 	return nil
@@ -58,10 +60,7 @@ func ParseManifest(r io.Reader) ([]string, error) {
 	return paths, nil
 }
 
-// Slice constructs and executes an rsync command to copy files. It uses a
-// specific set of include/exclude rules to ensure that only the files
-// listed in the manifest are copied, while still allowing rsync to traverse
-// the directory structure.
+// Slice constructs and executes an rsync command to copy files.
 func Slice(source, output string, files []string, exec Executor) error {
 	tmpFile, err := os.CreateTemp("", "repo-slice-manifest-*")
 	if err != nil {

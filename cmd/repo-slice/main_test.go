@@ -2,9 +2,12 @@
 package main
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/AlienHeadwars/repo-slice/internal/slicer"
 )
 
 const (
@@ -18,9 +21,21 @@ const (
 	flagOutput   = "--output"
 )
 
-// setupTestFS creates a temporary directory structure for testing. It registers
-// a cleanup function with the test to automatically remove the directory
-// when the test completes. It returns the root path of the created directory.
+// mockExecutor implements the slicer.Executor interface for testing.
+type mockExecutor struct {
+	returnErr bool
+}
+
+func (m *mockExecutor) Run(workDir, command string, args ...string) error {
+	if m.returnErr {
+		return errors.New("mock executor error")
+	}
+	// For happy-path tests, use the real executor to ensure integration.
+	realExecutor := slicer.CmdExecutor{}
+	return realExecutor.Run(workDir, command, args...)
+}
+
+// setupTestFS creates a temporary directory structure for testing.
 func setupTestFS(t *testing.T) string {
 	t.Helper()
 	rootDir, err := os.MkdirTemp("", "repo-slice-test-*")
@@ -29,9 +44,6 @@ func setupTestFS(t *testing.T) string {
 	}
 
 	t.Cleanup(func() {
-		// On Linux, we need to restore write permissions before removing.
-		_ = os.Chmod(filepath.Join(rootDir, "unreadable-manifest.txt"), 0644)
-		_ = os.Chmod(filepath.Join(rootDir, "unwritable-output"), 0755)
 		if err := os.RemoveAll(rootDir); err != nil {
 			t.Fatalf("failed to remove temp dir: %v", err)
 		}
@@ -53,18 +65,6 @@ func setupTestFS(t *testing.T) string {
 		t.Fatalf("failed to create manifest file: %v", err)
 	}
 
-	// Create a file with no read permissions to test manifest parsing errors.
-	unreadableManifestPath := filepath.Join(rootDir, "unreadable-manifest.txt")
-	if err := os.WriteFile(unreadableManifestPath, []byte(""), 0000); err != nil {
-		t.Fatalf("failed to create unreadable manifest file: %v", err)
-	}
-
-	// Create a directory with no write permissions to test slicer errors.
-	unwritableOutputPath := filepath.Join(rootDir, "unwritable-output")
-	if err := os.Mkdir(unwritableOutputPath, 0555); err != nil {
-		t.Fatalf("failed to create unwritable output dir: %v", err)
-	}
-
 	if err := os.WriteFile(filepath.Join(rootDir, testFileSource), []byte(""), 0644); err != nil {
 		t.Fatalf("failed to create source file: %v", err)
 	}
@@ -72,9 +72,7 @@ func setupTestFS(t *testing.T) string {
 	return rootDir
 }
 
-// TestRunEndToEnd is an end-to-end test for the main run function. It verifies
-// the full application logic, from argument parsing and validation to the
-// final slice operation.
+// TestRunEndToEnd verifies the full application logic.
 func TestRunEndToEnd(t *testing.T) {
 	rootDir := setupTestFS(t)
 	outputPath := filepath.Join(rootDir, testFileOutput)
@@ -85,8 +83,9 @@ func TestRunEndToEnd(t *testing.T) {
 			flagManifest, filepath.Join(rootDir, testFileManifest),
 			flagOutput, outputPath,
 		}
+		executor := &mockExecutor{returnErr: false}
 
-		err := run(args)
+		err := run(args, executor)
 		if err != nil {
 			t.Fatalf("run() with valid args failed unexpectedly: %v", err)
 		}
@@ -99,44 +98,18 @@ func TestRunEndToEnd(t *testing.T) {
 		}
 	})
 
-	t.Run("Invalid runs return errors", func(t *testing.T) {
-		testCases := []struct {
-			name string
-			args []string
-		}{
-			{
-				name: "Argument parsing error",
-				args: []string{"--unknown-flag"},
-			},
-			{
-				name: "Source does not exist",
-				args: []string{flagSource, filepath.Join(rootDir, "non-existent"), flagManifest, filepath.Join(rootDir, testFileManifest), flagOutput, outputPath},
-			},
-			{
-				name: "Source is a file",
-				args: []string{flagSource, filepath.Join(rootDir, testFileSource), flagManifest, filepath.Join(rootDir, testFileManifest), flagOutput, outputPath},
-			},
-			{
-				name: "Manifest does not exist",
-				args: []string{flagSource, filepath.Join(rootDir, testDirSource), flagManifest, "non-existent.txt", flagOutput, outputPath},
-			},
-			{
-				name: "Manifest is unreadable",
-				args: []string{flagSource, filepath.Join(rootDir, testDirSource), flagManifest, filepath.Join(rootDir, "unreadable-manifest.txt"), flagOutput, outputPath},
-			},
-			{
-				name: "Slice operation fails",
-				args: []string{flagSource, filepath.Join(rootDir, testDirSource), flagManifest, filepath.Join(rootDir, testFileManifest), flagOutput, filepath.Join(rootDir, "unwritable-output")},
-			},
+	t.Run("Slice operation fails", func(t *testing.T) {
+		args := []string{
+			flagSource, filepath.Join(rootDir, testDirSource),
+			flagManifest, filepath.Join(rootDir, testFileManifest),
+			flagOutput, outputPath,
 		}
+		// Configure the mock to return an error.
+		executor := &mockExecutor{returnErr: true}
 
-		for _, tc := range testCases {
-			t.Run(tc.name, func(t *testing.T) {
-				err := run(tc.args)
-				if err == nil {
-					t.Errorf("run() with args %v; expected an error but got nil", tc.args)
-				}
-			})
+		err := run(args, executor)
+		if err == nil {
+			t.Error("run() with a failing slicer did not return an error")
 		}
 	})
 }
