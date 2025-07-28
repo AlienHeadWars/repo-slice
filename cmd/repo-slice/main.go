@@ -19,8 +19,7 @@ import (
 	"github.com/AlienHeadwars/repo-slice/internal/validate"
 )
 
-// Config holds the configuration options for the repo-slice tool,
-// parsed from command-line arguments.
+// Config holds the configuration options for the repo-slice tool.
 type Config struct {
 	ManifestPath string
 	SourcePath   string
@@ -56,7 +55,10 @@ func (s *liveSlicer) ParseManifest(r io.Reader) ([]string, error) {
 	return slicer.ParseManifest(r)
 }
 func (s *liveSlicer) Slice(source, output string, files []string) error {
-	return slicer.Slice(source, output, files, &slicer.CmdExecutor{})
+	// Inject the concrete dependencies here.
+	executor := &slicer.CmdExecutor{}
+	filer := &slicer.LiveTempFiler{}
+	return slicer.Slice(source, output, files, executor, filer)
 }
 
 func main() {
@@ -66,7 +68,7 @@ func main() {
 	}
 }
 
-// run executes the main logic of the application based on the provided arguments.
+// run executes the main logic of the application.
 func run(args []string, fsys FileSystem, slicer Slicer) (err error) {
 	cfg, err := parseArgs(args)
 	if err != nil {
@@ -104,7 +106,7 @@ func run(args []string, fsys FileSystem, slicer Slicer) (err error) {
 	return nil
 }
 
-// parseArgs parses the command-line arguments and returns a populated Config struct.
+// parseArgs parses the command-line arguments.
 func parseArgs(args []string) (Config, error) {
 	var cfg Config
 	fs := flag.NewFlagSet("repo-slice", flag.ContinueOnError)

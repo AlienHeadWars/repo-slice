@@ -11,7 +11,8 @@ import (
 	"strings"
 )
 
-// Executor defines an interface for running external commands.
+// Executor defines an interface for running external commands from a specific
+// working directory.
 type Executor interface {
 	Run(workDir, command string, args ...string) error
 }
@@ -27,16 +28,20 @@ type TempFile interface {
 	Name() string
 }
 
-// liveTempFiler is a concrete implementation of TempFiler using the os package.
-type liveTempFiler struct{}
+// LiveTempFiler is a concrete implementation of TempFiler using the os package.
+type LiveTempFiler struct{}
 
-func (ltf *liveTempFiler) CreateTemp(dir, pattern string) (TempFile, error) {
+// CreateTemp creates a real temporary file using os.CreateTemp.
+func (ltf *LiveTempFiler) CreateTemp(dir, pattern string) (TempFile, error) {
 	return os.CreateTemp(dir, pattern)
 }
 
 // CmdExecutor is a concrete implementation of the Executor interface.
 type CmdExecutor struct{}
 
+// Run executes a command from the given working directory. It captures stderr
+// and treats the command as failed if it returns a non-zero exit code OR if
+// it produces any output on the stderr stream.
 func (e CmdExecutor) Run(workDir, command string, args ...string) error {
 	var stderr bytes.Buffer
 	cmd := exec.Command(command, args...)
