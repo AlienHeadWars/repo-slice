@@ -28,10 +28,10 @@ func setupTestFS(t *testing.T) string {
 		t.Fatalf("failed to create temp dir: %v", err)
 	}
 
-	// t.Cleanup registers a function to be called when the test
-	// and all its subtests complete. This is the idiomatic way
-	// to handle test cleanup.
 	t.Cleanup(func() {
+		// On Linux, we need to restore write permissions before removing.
+		_ = os.Chmod(filepath.Join(rootDir, "unreadable-manifest.txt"), 0644)
+		_ = os.Chmod(filepath.Join(rootDir, "unwritable-output"), 0755)
 		if err := os.RemoveAll(rootDir); err != nil {
 			t.Fatalf("failed to remove temp dir: %v", err)
 		}
@@ -51,6 +51,18 @@ func setupTestFS(t *testing.T) string {
 	manifestContent := "a.txt\n"
 	if err := os.WriteFile(filepath.Join(rootDir, testFileManifest), []byte(manifestContent), 0644); err != nil {
 		t.Fatalf("failed to create manifest file: %v", err)
+	}
+
+	// Create a file with no read permissions to test manifest parsing errors.
+	unreadableManifestPath := filepath.Join(rootDir, "unreadable-manifest.txt")
+	if err := os.WriteFile(unreadableManifestPath, []byte(""), 0000); err != nil {
+		t.Fatalf("failed to create unreadable manifest file: %v", err)
+	}
+
+	// Create a directory with no write permissions to test slicer errors.
+	unwritableOutputPath := filepath.Join(rootDir, "unwritable-output")
+	if err := os.Mkdir(unwritableOutputPath, 0555); err != nil {
+		t.Fatalf("failed to create unwritable output dir: %v", err)
 	}
 
 	if err := os.WriteFile(filepath.Join(rootDir, testFileSource), []byte(""), 0644); err != nil {
@@ -79,7 +91,6 @@ func TestRunEndToEnd(t *testing.T) {
 			t.Fatalf("run() with valid args failed unexpectedly: %v", err)
 		}
 
-		// Verify the output directory
 		if _, err := os.Stat(filepath.Join(outputPath, "a.txt")); os.IsNotExist(err) {
 			t.Error("expected file 'a.txt' was not found in the output directory")
 		}
@@ -94,16 +105,28 @@ func TestRunEndToEnd(t *testing.T) {
 			args []string
 		}{
 			{
+				name: "Argument parsing error",
+				args: []string{"--unknown-flag"},
+			},
+			{
 				name: "Source does not exist",
 				args: []string{flagSource, filepath.Join(rootDir, "non-existent"), flagManifest, filepath.Join(rootDir, testFileManifest), flagOutput, outputPath},
 			},
 			{
-				name: "Source is a file, not a directory",
+				name: "Source is a file",
 				args: []string{flagSource, filepath.Join(rootDir, testFileSource), flagManifest, filepath.Join(rootDir, testFileManifest), flagOutput, outputPath},
 			},
 			{
 				name: "Manifest does not exist",
-				args: []string{flagSource, filepath.Join(rootDir, testDirSource), flagManifest, filepath.Join(rootDir, "non-existent.txt"), flagOutput, outputPath},
+				args: []string{flagSource, filepath.Join(rootDir, testDirSource), flagManifest, "non-existent.txt", flagOutput, outputPath},
+			},
+			{
+				name: "Manifest is unreadable",
+				args: []string{flagSource, filepath.Join(rootDir, testDirSource), flagManifest, filepath.Join(rootDir, "unreadable-manifest.txt"), flagOutput, outputPath},
+			},
+			{
+				name: "Slice operation fails",
+				args: []string{flagSource, filepath.Join(rootDir, testDirSource), flagManifest, filepath.Join(rootDir, testFileManifest), flagOutput, filepath.Join(rootDir, "unwritable-output")},
 			},
 		}
 
