@@ -52,7 +52,10 @@ func ParseManifest(r io.Reader) ([]string, error) {
 	return paths, nil
 }
 
-// Slice constructs and executes an rsync command to copy files.
+// Slice constructs and executes an rsync command to copy files. It uses a
+// specific set of include/exclude rules to ensure that only the files
+// listed in the manifest are copied, while still allowing rsync to traverse
+// the directory structure.
 func Slice(source, output string, files []string, exec Executor) error {
 	tmpFile, err := os.CreateTemp("", "repo-slice-manifest-*")
 	if err != nil {
@@ -67,14 +70,12 @@ func Slice(source, output string, files []string, exec Executor) error {
 		return fmt.Errorf("failed to close temporary manifest file: %w", err)
 	}
 
-	// The `-aR` combination (archive and relative) is the most robust way to
-	// copy only the specified files while preserving their directory structure.
-	// By executing from within the source directory, we ensure the paths in
-	// the manifest are interpreted correctly.
 	args := []string{
-		"-aR",
-		"--files-from=" + tmpFile.Name(),
-		".", // The source is the current directory (which we set to `source`).
+		"-a", // Use archive mode, which implies recursion.
+		"--include-from=" + tmpFile.Name(),
+		"--include=*/", // Ensure directories are traversed.
+		"--exclude=*",  // Exclude all other files.
+		".",            // The source is the current directory.
 		output,
 	}
 
