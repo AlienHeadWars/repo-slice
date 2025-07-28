@@ -10,7 +10,6 @@ Automate the creation of streamlined, context-specific branches for your AI assi
 
 We are in the process of building out the core features as outlined in our [Project Roadmap](ROADMAP.md). We welcome feedback and contributions! If you're interested in helping, please see our [Contributing Guide](CONTRIBUTING.md).
 
-
 ## The Problem
 
 As a project grows, the entire codebase quickly becomes too large to use as a single context for an AI assistant like a Gemini Gem. To work effectively, these assistants, each assigned to a specific role, need a streamlined and relevant slice of the repository.
@@ -34,7 +33,6 @@ The workflow is straightforward:
 * **Branch-Ready Output**: Produces a clean directory structure ready to be committed to a new branch, unlike tools that generate a single text file for prompting.
 * **Extension Mapping**: Optionally remap file extensions during the copy process. This is useful for improving compatibility with tools that don't recognize certain extensions, such as renaming `.tsx` files to `.ts` for better LLM interpretation.
 
-
 ## Workflow Overview
 
 `repo-slice` is designed to be the engine of a fully automated CI/CD pipeline. The typical workflow is as follows:
@@ -46,28 +44,34 @@ The workflow is straightforward:
 
 ## Getting Started
 
-*(This parent section will house the initial steps for a new user).*
-
 ### Installation
 
-*(This section will contain the steps required to install the repo-slice CLI, to be filled in upon first release).*
+`repo-slice` is a self-contained Go binary. Installation steps will be provided upon the first official release.
+
+**Runtime Dependencies:**
+* **`rsync`**: This tool relies on the `rsync` command being available in the system's `PATH`. Please ensure it is installed on the machine or CI runner where you intend to run `repo-slice`.
 
 ### Basic Usage
 
-*(This section will provide a simple, self-contained code snippet showing the most common command-line invocation, as required by rule:styleguide:code-snippets).*
+To create a repository slice, you need a manifest file and a source directory. The following command will read the `allow-list.txt`, process the `./source-repo` directory, and create a filtered copy at `./sliced-repo`.
+
+```bash
+repo-slice --manifest="allow-list.txt" --source="./source-repo" --output="./sliced-repo"
+```
 
 ## Command-Line Reference
 
-*(This section will serve as the formal API documentation for the tool).*
-
 ### Arguments
 
-*(This section will use a table to detail all command-line flags, their purpose, and whether they are required, as per rule:styleguide:tables).*
+| Flag | Description | Required | Default |
+| :--- | :--- | :--- | :--- |
+| `--manifest` | Path to the "allow-list" file containing paths to include (one per line). | **Yes** | |
+| `--source` | The source directory to read from. | No | `.` |
+| `--output` | The destination directory where the filtered copy will be created. | **Yes**| |
 
 ### Exit Codes
 
 *(This section will formally document the tool's exit codes to aid in scripting and debugging, as per rule:styleguide:formal-syntax).*
-
 
 ## Quality Assurance
 
@@ -77,8 +81,6 @@ This project is committed to a high standard of code quality and security. To en
 * **SonarCloud**: For continuous static analysis to detect bugs, vulnerabilities, and code smells.
 * **Snyk**: For scanning dependencies against a database of known open-source vulnerabilities.
 * **Dependabot**: For automatically keeping our dependencies up-to-date.
-
 ## Contributing
 
-*(This section will briefly explain the project's openness to contributions and link directly to the CONTRIBUTING.md file for detailed standards and procedures).*
-
+We welcome contributions\! Please see our [CONTRIBUTING.md](https://www.google.com/search?q=CONTRIBUTING.md) for detailed standards and procedures.
