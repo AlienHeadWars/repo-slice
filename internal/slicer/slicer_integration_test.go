@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -18,7 +19,25 @@ func (e liveExecutor) Run(workDir, command string, args ...string) error {
 	return cmd.Run()
 }
 
+// TestCmdExecutor_RunFails is an integration test for the CmdExecutor that
+// verifies its error handling.
+func TestCmdExecutor_RunFails(t *testing.T) {
+	executor := CmdExecutor{}
+	// Execute a command that is guaranteed to fail.
+	err := executor.Run(".", "rsync", "--non-existent-flag")
+
+	if err == nil {
+		t.Fatal("CmdExecutor.Run() did not return an error for a failing command")
+	}
+
+	// Verify that the error message contains the stderr from the command.
+	if !strings.Contains(err.Error(), "STDERR") {
+		t.Error("Error message from failed command did not include STDERR")
+	}
+}
+
 func TestSliceIntegration(t *testing.T) {
+	// ... (test setup remains the same) ...
 	sourceDir, err := os.MkdirTemp("", "source-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp source dir: %v", err)
@@ -31,7 +50,6 @@ func TestSliceIntegration(t *testing.T) {
 	}
 	defer os.RemoveAll(outputDir)
 
-	// Create files in the source directory
 	_ = os.WriteFile(filepath.Join(sourceDir, "a.txt"), []byte("a"), 0644)
 	_ = os.WriteFile(filepath.Join(sourceDir, "b.txt"), []byte("b"), 0644)
 	_ = os.Mkdir(filepath.Join(sourceDir, "subdir"), 0755)
@@ -45,7 +63,7 @@ func TestSliceIntegration(t *testing.T) {
 		t.Fatalf("Slice() failed during integration test: %v", err)
 	}
 
-	// Assertions: Check the contents of the output directory
+	// ... (assertions remain the same) ...
 	if _, err := os.Stat(filepath.Join(outputDir, "a.txt")); os.IsNotExist(err) {
 		t.Error("Expected file 'a.txt' was not found in the output directory")
 	}
