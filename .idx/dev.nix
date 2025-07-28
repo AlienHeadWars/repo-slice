@@ -1,4 +1,3 @@
-# file: .idx/dev.nix
 # To learn more about how to use Nix to configure your environment
 # see: https://firebase.google.com/docs/studio/customize-workspace
 { pkgs, ... }: {
@@ -10,6 +9,9 @@
     # Add the specific Go version and linter here
     pkgs.go_1_24
     pkgs.golangci-lint
+    # rsync is a runtime dependency required for the core file-slicing
+    # logic and for the integration tests to pass.
+    pkgs.rsync
   ];
   # Sets environment variables in the workspace
   env = {};
