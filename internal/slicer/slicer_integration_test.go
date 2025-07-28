@@ -61,9 +61,10 @@ func TestSliceIntegration(t *testing.T) {
 
 	filesToCopy := []string{"a.txt", "subdir/c.txt"}
 
-	// Use the real CmdExecutor for the integration test.
-	executor := CmdExecutor{}
-	err = Slice(sourceDir, outputDir, filesToCopy, executor)
+	// Use the real CmdExecutor and LiveTempFiler for the integration test.
+	executor := &CmdExecutor{}
+	filer := &LiveTempFiler{}
+	err = Slice(sourceDir, outputDir, filesToCopy, executor, filer)
 	if err != nil {
 		t.Fatalf("Slice() failed during integration test: %v", err)
 	}
