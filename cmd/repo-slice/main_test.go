@@ -73,14 +73,24 @@ func TestRunIntegration(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(rootDir)
+	t.Cleanup(func() {
+		if err := os.RemoveAll(rootDir); err != nil {
+			t.Fatalf("failed to remove temp dir: %v", err)
+		}
+	})
 
 	sourceDir := filepath.Join(rootDir, "source")
-	os.Mkdir(sourceDir, 0755)
-	os.WriteFile(filepath.Join(sourceDir, "a.txt"), []byte("a"), 0644)
+	if err := os.Mkdir(sourceDir, 0755); err != nil {
+		t.Fatalf("failed to create source dir: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(sourceDir, "a.txt"), []byte("a"), 0644); err != nil {
+		t.Fatalf("failed to create a.txt: %v", err)
+	}
 
 	manifestPath := filepath.Join(rootDir, "manifest.txt")
-	os.WriteFile(manifestPath, []byte("a.txt"), 0644)
+	if err := os.WriteFile(manifestPath, []byte("a.txt"), 0644); err != nil {
+		t.Fatalf("failed to create manifest file: %v", err)
+	}
 
 	outputPath := filepath.Join(rootDir, "output")
 
