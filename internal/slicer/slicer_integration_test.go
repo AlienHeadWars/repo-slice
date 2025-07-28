@@ -1,7 +1,5 @@
 //go:build integration
 
-// ... (file header remains the same) ...
-
 package slicer
 
 import (
@@ -20,9 +18,7 @@ func (e liveExecutor) Run(workDir, command string, args ...string) error {
 	return cmd.Run()
 }
 
-// ... (TestSliceIntegration remains the same) ...
 func TestSliceIntegration(t *testing.T) {
-	// Setup: Create temporary source directory, files, and manifest
 	sourceDir, err := os.MkdirTemp("", "source-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp source dir: %v", err)
@@ -41,10 +37,8 @@ func TestSliceIntegration(t *testing.T) {
 	_ = os.Mkdir(filepath.Join(sourceDir, "subdir"), 0755)
 	_ = os.WriteFile(filepath.Join(sourceDir, "subdir", "c.txt"), []byte("c"), 0644)
 
-	// Create the manifest content
 	filesToCopy := []string{"a.txt", "subdir/c.txt"}
 
-	// Execution: Run the slice operation with a real executor
 	executor := liveExecutor{}
 	err = Slice(sourceDir, outputDir, filesToCopy, executor)
 	if err != nil {

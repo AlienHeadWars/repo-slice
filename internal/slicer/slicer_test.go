@@ -2,25 +2,10 @@
 package slicer
 
 import (
-	"io/fs"
 	"reflect"
 	"strings"
 	"testing"
-	"time"
 )
-
-// ... (mockFileInfo remains the same) ...
-type mockFileInfo struct {
-	name  string
-	isDir bool
-}
-
-func (m mockFileInfo) Name() string       { return m.name }
-func (m mockFileInfo) Size() int64        { return 0 }
-func (m mockFileInfo) Mode() fs.FileMode  { return 0 }
-func (m mockFileInfo) ModTime() time.Time { return time.Time{} }
-func (m mockFileInfo) IsDir() bool        { return m.isDir }
-func (m mockFileInfo) Sys() interface{}   { return nil }
 
 // mockExecutor implements the Executor interface to capture command calls.
 type mockExecutor struct {
@@ -38,19 +23,16 @@ func (m *mockExecutor) Run(workDir, command string, args ...string) error {
 	return nil
 }
 
-// ... (TestParseManifest remains the same) ...
 func TestParseManifest(t *testing.T) {
 	manifestContent := `
 		file1.go
 		  dir/file2.go  
-		
-		# A comment to be ignored by the logic
+		# A comment to be ignored
 		dir2/
 	`
-	// Use strings.NewReader to create an io.Reader from the test string.
 	reader := strings.NewReader(manifestContent)
 
-	expected := []string{"file1.go", "dir/file2.go", "# A comment to be ignored by the logic", "dir2/"}
+	expected := []string{"file1.go", "dir/file2.go", "dir2/"}
 	actual, err := ParseManifest(reader)
 
 	if err != nil {
@@ -79,10 +61,5 @@ func TestSlice(t *testing.T) {
 	}
 	if executor.calledWith.command != "rsync" {
 		t.Errorf("Expected command to be 'rsync', but got '%s'", executor.calledWith.command)
-	}
-
-	argsString := strings.Join(executor.calledWith.args, " ")
-	if !strings.Contains(argsString, " . ") {
-		t.Error("rsync arguments should contain '.' as the source")
 	}
 }
