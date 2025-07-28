@@ -21,7 +21,8 @@ type Executor interface {
 type CmdExecutor struct{}
 
 // Run executes a command from the given working directory. It captures stderr
-// and includes it in the error message if the command fails.
+// and includes it in the error message if the command fails or produces any
+// output on stderr.
 func (e CmdExecutor) Run(workDir, command string, args ...string) error {
 	var stderr bytes.Buffer
 	cmd := exec.Command(command, args...)
@@ -29,9 +30,14 @@ func (e CmdExecutor) Run(workDir, command string, args ...string) error {
 	cmd.Stderr = &stderr
 
 	err := cmd.Run()
-	if err != nil {
-		return fmt.Errorf("command failed: %w\nSTDERR:\n%s", err, stderr.String())
+	// Treat any output on stderr as an error, even if the exit code is 0.
+	if stderr.Len() > 0 {
+		return fmt.Errorf("command produced stderr output:\n%s", stderr.String())
 	}
+	if err != nil {
+		return fmt.Errorf("command failed: %w", err)
+	}
+
 	return nil
 }
 
@@ -61,11 +67,8 @@ func Slice(source, output string, files []string, exec Executor) error {
 	if err != nil {
 		return fmt.Errorf("failed to create temporary manifest file: %w", err)
 	}
-	// The deferred function now checks the error from os.Remove.
 	defer func() {
 		if err := os.Remove(tmpFile.Name()); err != nil {
-			// Log the error to stderr, as we can't return it here without
-			// potentially shadowing the main error from the rsync command.
 			fmt.Fprintf(os.Stderr, "warning: failed to remove temporary file %s: %v\n", tmpFile.Name(), err)
 		}
 	}()
