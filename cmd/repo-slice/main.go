@@ -12,6 +12,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/AlienHeadwars/repo-slice/internal/slicer"
@@ -26,33 +27,61 @@ type Config struct {
 	OutputPath   string
 }
 
+// FileSystem defines an interface for file system operations needed by run.
+type FileSystem interface {
+	ValidateInputs(cfg validate.Config) error
+	Open(name string) (io.ReadCloser, error)
+}
+
+// Slicer defines an interface for the core application logic.
+type Slicer interface {
+	ParseManifest(r io.Reader) ([]string, error)
+	Slice(source, output string, files []string) error
+}
+
+// liveFS is a concrete implementation of the FileSystem interface.
+type liveFS struct{}
+
+func (fs *liveFS) ValidateInputs(cfg validate.Config) error {
+	return validate.ValidateInputs(cfg, &validate.LiveFS{})
+}
+func (fs *liveFS) Open(name string) (io.ReadCloser, error) {
+	return os.Open(name)
+}
+
+// liveSlicer is a concrete implementation of the Slicer interface.
+type liveSlicer struct{}
+
+func (s *liveSlicer) ParseManifest(r io.Reader) ([]string, error) {
+	return slicer.ParseManifest(r)
+}
+func (s *liveSlicer) Slice(source, output string, files []string) error {
+	return slicer.Slice(source, output, files, &slicer.CmdExecutor{})
+}
+
 func main() {
-	// The real command executor is created here and passed to the run function.
-	executor := slicer.CmdExecutor{}
-	if err := run(os.Args[1:], executor); err != nil {
+	if err := run(os.Args[1:], &liveFS{}, &liveSlicer{}); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }
 
 // run executes the main logic of the application based on the provided arguments.
-func run(args []string, exec slicer.Executor) (err error) {
+func run(args []string, fsys FileSystem, slicer Slicer) (err error) {
 	cfg, err := parseArgs(args)
 	if err != nil {
 		return err
 	}
 
-	fsys := &validate.LiveFS{}
 	validationCfg := validate.Config{
 		SourcePath:   cfg.SourcePath,
 		ManifestPath: cfg.ManifestPath,
 	}
-
-	if err := validate.ValidateInputs(validationCfg, fsys); err != nil {
+	if err := fsys.ValidateInputs(validationCfg); err != nil {
 		return err
 	}
 
-	manifestFile, err := os.Open(cfg.ManifestPath)
+	manifestFile, err := fsys.Open(cfg.ManifestPath)
 	if err != nil {
 		return fmt.Errorf("could not open manifest file: %w", err)
 	}
@@ -67,7 +96,7 @@ func run(args []string, exec slicer.Executor) (err error) {
 		return fmt.Errorf("failed to parse manifest: %w", err)
 	}
 
-	if err := slicer.Slice(cfg.SourcePath, cfg.OutputPath, files, exec); err != nil {
+	if err := slicer.Slice(cfg.SourcePath, cfg.OutputPath, files); err != nil {
 		return fmt.Errorf("failed to execute slice operation: %w", err)
 	}
 

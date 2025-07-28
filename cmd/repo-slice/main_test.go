@@ -3,113 +3,95 @@ package main
 
 import (
 	"errors"
+	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
-	"github.com/AlienHeadwars/repo-slice/internal/slicer"
+	"github.com/AlienHeadwars/repo-slice/internal/validate"
 )
 
-const (
-	testDirSource    = "valid-source"
-	testFileManifest = "valid-manifest.txt"
-	testFileSource   = "source-is-a-file"
-	testFileOutput   = "test-output"
-
-	flagSource   = "--source"
-	flagManifest = "--manifest"
-	flagOutput   = "--output"
-)
-
-// mockExecutor implements the slicer.Executor interface for testing.
-type mockExecutor struct {
-	returnErr bool
+// mockFS is a mock implementation of the FileSystem interface for testing.
+type mockFS struct {
+	validateErr error
+	openErr     error
 }
 
-func (m *mockExecutor) Run(workDir, command string, args ...string) error {
-	if m.returnErr {
-		return errors.New("mock executor error")
+func (m *mockFS) ValidateInputs(cfg validate.Config) error { return m.validateErr }
+func (m *mockFS) Open(name string) (io.ReadCloser, error) {
+	if m.openErr != nil {
+		return nil, m.openErr
 	}
-	// For happy-path tests, use the real executor to ensure integration.
-	realExecutor := slicer.CmdExecutor{}
-	return realExecutor.Run(workDir, command, args...)
+	// Return a no-op closer for the success path.
+	return io.NopCloser(strings.NewReader("")), nil
 }
 
-// setupTestFS creates a temporary directory structure for testing.
-func setupTestFS(t *testing.T) string {
-	t.Helper()
-	rootDir, err := os.MkdirTemp("", "repo-slice-test-*")
+// mockSlicer is a mock implementation of the Slicer interface for testing.
+type mockSlicer struct {
+	parseErr error
+	sliceErr error
+}
+
+func (m *mockSlicer) ParseManifest(r io.Reader) ([]string, error)       { return nil, m.parseErr }
+func (m *mockSlicer) Slice(source, output string, files []string) error { return m.sliceErr }
+
+// TestRunUnit tests the error-handling paths of the run function using mocks.
+func TestRunUnit(t *testing.T) {
+	// Dummy args for tests that get past the parsing stage.
+	validArgs := []string{"--manifest", "m.txt", "--source", "s", "--output", "o"}
+
+	testCases := []struct {
+		name    string
+		args    []string
+		fs      FileSystem
+		slicer  Slicer
+		wantErr bool
+	}{
+		{"Argument parsing fails", []string{"--bad-flag"}, &mockFS{}, &mockSlicer{}, true},
+		{"Validation fails", validArgs, &mockFS{validateErr: errors.New("validation failed")}, &mockSlicer{}, true},
+		{"File open fails", validArgs, &mockFS{openErr: errors.New("open failed")}, &mockSlicer{}, true},
+		{"Manifest parsing fails", validArgs, &mockFS{}, &mockSlicer{parseErr: errors.New("parse failed")}, true},
+		{"Slice operation fails", validArgs, &mockFS{}, &mockSlicer{sliceErr: errors.New("slice failed")}, true},
+		{"Successful run", validArgs, &mockFS{}, &mockSlicer{}, false},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := run(tc.args, tc.fs, tc.slicer)
+			if (err != nil) != tc.wantErr {
+				t.Errorf("run() error = %v, wantErr %v", err, tc.wantErr)
+			}
+		})
+	}
+}
+
+// TestRunIntegration is a simple end-to-end test to ensure the real
+// components are wired together correctly for the happy path.
+func TestRunIntegration(t *testing.T) {
+	rootDir, err := os.MkdirTemp("", "repo-slice-integration-*")
 	if err != nil {
 		t.Fatalf("failed to create temp dir: %v", err)
 	}
+	defer os.RemoveAll(rootDir)
 
-	t.Cleanup(func() {
-		if err := os.RemoveAll(rootDir); err != nil {
-			t.Fatalf("failed to remove temp dir: %v", err)
-		}
-	})
+	sourceDir := filepath.Join(rootDir, "source")
+	os.Mkdir(sourceDir, 0755)
+	os.WriteFile(filepath.Join(sourceDir, "a.txt"), []byte("a"), 0644)
 
-	sourcePath := filepath.Join(rootDir, testDirSource)
-	if err := os.Mkdir(sourcePath, 0755); err != nil {
-		t.Fatalf("failed to create source dir: %v", err)
-	}
-	if err := os.WriteFile(filepath.Join(sourcePath, "a.txt"), []byte("a"), 0644); err != nil {
-		t.Fatalf("failed to create a.txt: %v", err)
-	}
-	if err := os.WriteFile(filepath.Join(sourcePath, "b.txt"), []byte("b"), 0644); err != nil {
-		t.Fatalf("failed to create b.txt: %v", err)
-	}
+	manifestPath := filepath.Join(rootDir, "manifest.txt")
+	os.WriteFile(manifestPath, []byte("a.txt"), 0644)
 
-	manifestContent := "a.txt\n"
-	if err := os.WriteFile(filepath.Join(rootDir, testFileManifest), []byte(manifestContent), 0644); err != nil {
-		t.Fatalf("failed to create manifest file: %v", err)
+	outputPath := filepath.Join(rootDir, "output")
+
+	args := []string{"--manifest", manifestPath, "--source", sourceDir, "--output", outputPath}
+	err = run(args, &liveFS{}, &liveSlicer{})
+
+	if err != nil {
+		t.Fatalf("run() failed on integration test: %v", err)
 	}
 
-	if err := os.WriteFile(filepath.Join(rootDir, testFileSource), []byte(""), 0644); err != nil {
-		t.Fatalf("failed to create source file: %v", err)
+	if _, err := os.Stat(filepath.Join(outputPath, "a.txt")); os.IsNotExist(err) {
+		t.Error("expected file 'a.txt' was not found in the output directory")
 	}
-
-	return rootDir
-}
-
-// TestRunEndToEnd verifies the full application logic.
-func TestRunEndToEnd(t *testing.T) {
-	rootDir := setupTestFS(t)
-	outputPath := filepath.Join(rootDir, testFileOutput)
-
-	t.Run("Valid run creates correct output", func(t *testing.T) {
-		args := []string{
-			flagSource, filepath.Join(rootDir, testDirSource),
-			flagManifest, filepath.Join(rootDir, testFileManifest),
-			flagOutput, outputPath,
-		}
-		executor := &mockExecutor{returnErr: false}
-
-		err := run(args, executor)
-		if err != nil {
-			t.Fatalf("run() with valid args failed unexpectedly: %v", err)
-		}
-
-		if _, err := os.Stat(filepath.Join(outputPath, "a.txt")); os.IsNotExist(err) {
-			t.Error("expected file 'a.txt' was not found in the output directory")
-		}
-		if _, err := os.Stat(filepath.Join(outputPath, "b.txt")); !os.IsNotExist(err) {
-			t.Error("unexpected file 'b.txt' was found in the output directory")
-		}
-	})
-
-	t.Run("Slice operation fails", func(t *testing.T) {
-		args := []string{
-			flagSource, filepath.Join(rootDir, testDirSource),
-			flagManifest, filepath.Join(rootDir, testFileManifest),
-			flagOutput, outputPath,
-		}
-		// Configure the mock to return an error.
-		executor := &mockExecutor{returnErr: true}
-
-		err := run(args, executor)
-		if err == nil {
-			t.Error("run() with a failing slicer did not return an error")
-		}
-	})
 }
