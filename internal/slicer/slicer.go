@@ -11,8 +11,6 @@ import (
 	"os"
 	"os/exec"
 	"strings"
-
-	"github.com/AlienHeadwars/repo-slice/internal/validate"
 )
 
 // Executor defines an interface for running external commands. This allows for
@@ -36,20 +34,9 @@ func (e CmdExecutor) Run(command string, args ...string) error {
 	return cmd.Run()
 }
 
-// ParseManifest reads and parses a manifest file from the provided file system.
+// ParseManifest reads and parses a manifest from any io.Reader.
 // It returns a slice of file paths, ignoring empty lines and trimming whitespace.
-func (fsys *validate.LiveFS) ParseManifest(path string) ([]string, error) {
-	file, err := os.Open(path)
-	if err != nil {
-		return nil, fmt.Errorf("could not open manifest file: %w", err)
-	}
-	defer file.Close()
-
-	return parseManifestReader(file)
-}
-
-// parseManifestReader is a helper that parses content from any io.Reader.
-func parseManifestReader(r io.Reader) ([]string, error) {
+func ParseManifest(r io.Reader) ([]string, error) {
 	var paths []string
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
@@ -69,14 +56,12 @@ func parseManifestReader(r io.Reader) ([]string, error) {
 // Slice constructs and executes an rsync command to copy files from a source
 // to a destination directory, using a temporary file created from the manifest list.
 func Slice(source, output string, files []string, exec Executor) error {
-	// Create a temporary file to hold the list of files for rsync.
 	tmpFile, err := os.CreateTemp("", "repo-slice-manifest-*")
 	if err != nil {
 		return fmt.Errorf("failed to create temporary manifest file: %w", err)
 	}
 	defer os.Remove(tmpFile.Name())
 
-	// Write the file paths to the temporary file.
 	if _, err := tmpFile.WriteString(strings.Join(files, "\n")); err != nil {
 		return fmt.Errorf("failed to write to temporary manifest file: %w", err)
 	}
@@ -84,9 +69,8 @@ func Slice(source, output string, files []string, exec Executor) error {
 		return fmt.Errorf("failed to close temporary manifest file: %w", err)
 	}
 
-	// Construct and run the rsync command.
 	args := []string{
-		"-a", // Archive mode: recursive, preserves symlinks, permissions, times, etc.
+		"-a",
 		"--files-from=" + tmpFile.Name(),
 		source,
 		output,

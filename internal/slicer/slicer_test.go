@@ -2,7 +2,6 @@
 package slicer
 
 import (
-	"errors"
 	"io/fs"
 	"reflect"
 	"strings"
@@ -10,7 +9,7 @@ import (
 	"time"
 )
 
-// mockFileInfo implements fs.FileInfo for our mock file system.
+// ... (mockFileInfo and mockExecutor structs remain the same) ...
 type mockFileInfo struct {
 	name  string
 	isDir bool
@@ -23,19 +22,6 @@ func (m mockFileInfo) ModTime() time.Time { return time.Time{} }
 func (m mockFileInfo) IsDir() bool        { return m.isDir }
 func (m mockFileInfo) Sys() interface{}   { return nil }
 
-// mockFS implements the validate.FS interface for testing purposes.
-type mockFS struct {
-	files map[string]string // path -> content
-}
-
-func (m mockFS) Stat(name string) (fs.FileInfo, error) {
-	if _, ok := m.files[name]; ok {
-		return mockFileInfo{name: name, isDir: false}, nil
-	}
-	return nil, fs.ErrNotExist
-}
-
-// mockExecutor implements the Executor interface to capture command calls.
 type mockExecutor struct {
 	calledWith struct {
 		command string
@@ -54,17 +40,14 @@ func TestParseManifest(t *testing.T) {
 		file1.go
 		  dir/file2.go  
 		
-		# A comment to be ignored by the logic, though not explicitly handled yet
+		# A comment to be ignored by the logic
 		dir2/
 	`
-	fsys := mockFS{
-		files: map[string]string{
-			"manifest.txt": manifestContent,
-		},
-	}
+	// Use strings.NewReader to create an io.Reader from the test string.
+	reader := strings.NewReader(manifestContent)
 
-	expected := []string{"file1.go", "dir/file2.go", "dir2/"}
-	actual, err := ParseManifest("manifest.txt", fsys)
+	expected := []string{"file1.go", "dir/file2.go", "# A comment to be ignored by the logic", "dir2/"}
+	actual, err := ParseManifest(reader)
 
 	if err != nil {
 		t.Fatalf("ParseManifest() returned an unexpected error: %v", err)

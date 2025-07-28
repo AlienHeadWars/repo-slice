@@ -19,8 +19,7 @@ import (
 	"github.com/AlienHeadwars/repo-slice/internal/validate"
 )
 
-// Config holds the configuration options for the repo-slice tool,
-// parsed from command-line arguments.
+// ... (Config struct remains the same) ...
 type Config struct {
 	ManifestPath string
 	SourcePath   string
@@ -51,8 +50,15 @@ func run(args []string) error {
 		return err
 	}
 
+	// Open the manifest file to get an io.Reader.
+	manifestFile, err := os.Open(cfg.ManifestPath)
+	if err != nil {
+		return fmt.Errorf("could not open manifest file: %w", err)
+	}
+	defer manifestFile.Close()
+
 	// Parse the manifest file.
-	files, err := fsys.ParseManifest(cfg.ManifestPath)
+	files, err := slicer.ParseManifest(manifestFile)
 	if err != nil {
 		return fmt.Errorf("failed to parse manifest: %w", err)
 	}
@@ -67,9 +73,7 @@ func run(args []string) error {
 	return nil
 }
 
-// parseArgs parses the command-line arguments from a string slice and returns
-// a populated Config struct. It returns an error if the arguments cannot be
-// parsed.
+// ... (parseArgs function remains the same) ...
 func parseArgs(args []string) (Config, error) {
 	var cfg Config
 	fs := flag.NewFlagSet("repo-slice", flag.ContinueOnError)
