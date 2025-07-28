@@ -1,8 +1,6 @@
 //go:build integration
 
-// This file contains integration tests that interact with the real file system
-// and execute the rsync command. To run these tests, use the build tag
-// 'integration': go test -v ./... -tags=integration
+// ... (file header remains the same) ...
 
 package slicer
 
@@ -16,10 +14,13 @@ import (
 // liveExecutor is a real implementation of the Executor interface.
 type liveExecutor struct{}
 
-func (e liveExecutor) Run(command string, args ...string) error {
-	return exec.Command(command, args...).Run()
+func (e liveExecutor) Run(workDir, command string, args ...string) error {
+	cmd := exec.Command(command, args...)
+	cmd.Dir = workDir
+	return cmd.Run()
 }
 
+// ... (TestSliceIntegration remains the same) ...
 func TestSliceIntegration(t *testing.T) {
 	// Setup: Create temporary source directory, files, and manifest
 	sourceDir, err := os.MkdirTemp("", "source-*")
@@ -41,7 +42,6 @@ func TestSliceIntegration(t *testing.T) {
 	_ = os.WriteFile(filepath.Join(sourceDir, "subdir", "c.txt"), []byte("c"), 0644)
 
 	// Create the manifest content
-	manifestContent := "a.txt\nsubdir/c.txt\n"
 	filesToCopy := []string{"a.txt", "subdir/c.txt"}
 
 	// Execution: Run the slice operation with a real executor

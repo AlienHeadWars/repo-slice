@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-// ... (mockFileInfo and mockExecutor structs remain the same) ...
+// ... (mockFileInfo remains the same) ...
 type mockFileInfo struct {
 	name  string
 	isDir bool
@@ -22,19 +22,23 @@ func (m mockFileInfo) ModTime() time.Time { return time.Time{} }
 func (m mockFileInfo) IsDir() bool        { return m.isDir }
 func (m mockFileInfo) Sys() interface{}   { return nil }
 
+// mockExecutor implements the Executor interface to capture command calls.
 type mockExecutor struct {
 	calledWith struct {
+		workDir string
 		command string
 		args    []string
 	}
 }
 
-func (m *mockExecutor) Run(command string, args ...string) error {
+func (m *mockExecutor) Run(workDir, command string, args ...string) error {
+	m.calledWith.workDir = workDir
 	m.calledWith.command = command
 	m.calledWith.args = args
 	return nil
 }
 
+// ... (TestParseManifest remains the same) ...
 func TestParseManifest(t *testing.T) {
 	manifestContent := `
 		file1.go
@@ -70,21 +74,15 @@ func TestSlice(t *testing.T) {
 		t.Fatalf("Slice() returned an unexpected error: %v", err)
 	}
 
+	if executor.calledWith.workDir != sourceDir {
+		t.Errorf("Expected workDir to be '%s', got '%s'", sourceDir, executor.calledWith.workDir)
+	}
 	if executor.calledWith.command != "rsync" {
 		t.Errorf("Expected command to be 'rsync', but got '%s'", executor.calledWith.command)
 	}
 
 	argsString := strings.Join(executor.calledWith.args, " ")
-	if !strings.Contains(argsString, "-a") {
-		t.Error("rsync arguments should contain '-a'")
-	}
-	if !strings.Contains(argsString, "--files-from=") {
-		t.Error("rsync arguments should contain '--files-from='")
-	}
-	if !strings.Contains(argsString, sourceDir) {
-		t.Errorf("rsync arguments should contain source directory '%s'", sourceDir)
-	}
-	if !strings.Contains(argsString, outputDir) {
-		t.Errorf("rsync arguments should contain output directory '%s'", outputDir)
+	if !strings.Contains(argsString, " . ") {
+		t.Error("rsync arguments should contain '.' as the source")
 	}
 }

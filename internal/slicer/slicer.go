@@ -1,7 +1,4 @@
 // file: internal/slicer/slicer.go
-
-// Package slicer contains the core logic for parsing the manifest and
-// executing the rsync command to create a repository slice.
 package slicer
 
 import (
@@ -13,29 +10,25 @@ import (
 	"strings"
 )
 
-// Executor defines an interface for running external commands. This allows for
-// a mock implementation to be used in unit tests, adhering to the Dependency
-// Inversion Principle.
+// Executor defines an interface for running external commands.
 type Executor interface {
-	// Run executes a command with the given arguments and returns an error
-	// if the command fails.
-	Run(command string, args ...string) error
+	// Run executes a command from a specific working directory.
+	Run(workDir, command string, args ...string) error
 }
 
-// CmdExecutor is a concrete implementation of the Executor interface that runs
-// real commands on the operating system.
+// CmdExecutor is a concrete implementation of the Executor interface.
 type CmdExecutor struct{}
 
-// Run executes a command using the os/exec package.
-func (e CmdExecutor) Run(command string, args ...string) error {
+// Run executes a command from the given working directory.
+func (e CmdExecutor) Run(workDir, command string, args ...string) error {
 	cmd := exec.Command(command, args...)
+	cmd.Dir = workDir
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	return cmd.Run()
 }
 
 // ParseManifest reads and parses a manifest from any io.Reader.
-// It returns a slice of file paths, ignoring empty lines and trimming whitespace.
 func ParseManifest(r io.Reader) ([]string, error) {
 	var paths []string
 	scanner := bufio.NewScanner(r)
@@ -45,16 +38,13 @@ func ParseManifest(r io.Reader) ([]string, error) {
 			paths = append(paths, line)
 		}
 	}
-
 	if err := scanner.Err(); err != nil {
 		return nil, fmt.Errorf("error reading manifest content: %w", err)
 	}
-
 	return paths, nil
 }
 
-// Slice constructs and executes an rsync command to copy files from a source
-// to a destination directory, using a temporary file created from the manifest list.
+// Slice constructs and executes an rsync command to copy files.
 func Slice(source, output string, files []string, exec Executor) error {
 	tmpFile, err := os.CreateTemp("", "repo-slice-manifest-*")
 	if err != nil {
@@ -69,14 +59,18 @@ func Slice(source, output string, files []string, exec Executor) error {
 		return fmt.Errorf("failed to close temporary manifest file: %w", err)
 	}
 
+	// The `-R` (relative) flag is crucial. It tells rsync to preserve the
+	// path structure of the files listed in the manifest.
 	args := []string{
 		"-a",
+		"-R",
 		"--files-from=" + tmpFile.Name(),
-		source,
+		".", // Source is the current directory (which we set to `source`).
 		output,
 	}
 
-	if err := exec.Run("rsync", args...); err != nil {
+	// Execute the command from within the source directory.
+	if err := exec.Run(source, "rsync", args...); err != nil {
 		return fmt.Errorf("rsync command failed: %w", err)
 	}
 
