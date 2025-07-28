@@ -11,18 +11,32 @@ import (
 	"strings"
 )
 
-// Executor defines an interface for running external commands from a specific
-// working directory.
+// Executor defines an interface for running external commands.
 type Executor interface {
 	Run(workDir, command string, args ...string) error
+}
+
+// TempFiler defines an interface for creating and managing temporary files.
+type TempFiler interface {
+	CreateTemp(dir, pattern string) (TempFile, error)
+}
+
+// TempFile defines an interface for interacting with a temporary file.
+type TempFile interface {
+	io.WriteCloser
+	Name() string
+}
+
+// liveTempFiler is a concrete implementation of TempFiler using the os package.
+type liveTempFiler struct{}
+
+func (ltf *liveTempFiler) CreateTemp(dir, pattern string) (TempFile, error) {
+	return os.CreateTemp(dir, pattern)
 }
 
 // CmdExecutor is a concrete implementation of the Executor interface.
 type CmdExecutor struct{}
 
-// Run executes a command from the given working directory. It captures stderr
-// and treats the command as failed if it returns a non-zero exit code OR if
-// it produces any output on the stderr stream.
 func (e CmdExecutor) Run(workDir, command string, args ...string) error {
 	var stderr bytes.Buffer
 	cmd := exec.Command(command, args...)
@@ -30,21 +44,16 @@ func (e CmdExecutor) Run(workDir, command string, args ...string) error {
 	cmd.Stderr = &stderr
 
 	err := cmd.Run()
-
-	// rsync can exit with code 0 but still report errors (e.g., permission denied)
-	// on stderr. We must treat any stderr output as a failure.
 	if err == nil && stderr.Len() > 0 {
 		return fmt.Errorf("command produced stderr output:\n%s", stderr.String())
 	}
 	if err != nil {
 		return fmt.Errorf("command failed with exit code: %w\nSTDERR:\n%s", err, stderr.String())
 	}
-
 	return nil
 }
 
-// ParseManifest reads and parses a manifest from any io.Reader. It returns a
-// slice of file paths, ignoring empty lines and lines starting with '#'.
+// ParseManifest reads and parses a manifest from any io.Reader.
 func ParseManifest(r io.Reader) ([]string, error) {
 	var paths []string
 	scanner := bufio.NewScanner(r)
@@ -61,8 +70,8 @@ func ParseManifest(r io.Reader) ([]string, error) {
 }
 
 // Slice constructs and executes an rsync command to copy files.
-func Slice(source, output string, files []string, exec Executor) error {
-	tmpFile, err := os.CreateTemp("", "repo-slice-manifest-*")
+func Slice(source, output string, files []string, exec Executor, filer TempFiler) error {
+	tmpFile, err := filer.CreateTemp("", "repo-slice-manifest-*")
 	if err != nil {
 		return fmt.Errorf("failed to create temporary manifest file: %w", err)
 	}
@@ -72,7 +81,7 @@ func Slice(source, output string, files []string, exec Executor) error {
 		}
 	}()
 
-	if _, err := tmpFile.WriteString(strings.Join(files, "\n")); err != nil {
+	if _, err := tmpFile.Write([]byte(strings.Join(files, "\n"))); err != nil {
 		return fmt.Errorf("failed to write to temporary manifest file: %w", err)
 	}
 	if err := tmpFile.Close(); err != nil {
