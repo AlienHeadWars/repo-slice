@@ -42,10 +42,12 @@ type MockFS struct {
 
 // Stat simulates the Stat operation for our mock file system.
 func (m *MockFS) Stat(name string) (fs.FileInfo, error) {
-	if _, ok := m.Files[name]; ok {
-		return MockFileInfo{FileName: name}, nil
+	isDir, ok := m.Files[name]
+	if !ok {
+		return nil, fs.ErrNotExist
 	}
-	return nil, fs.ErrNotExist
+	// This now correctly passes the isDir value from the map.
+	return MockFileInfo{FileName: name, IsDirBool: isDir}, nil
 }
 
 // WalkDir simulates walking a directory structure.
