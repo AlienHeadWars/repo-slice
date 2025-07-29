@@ -2,55 +2,19 @@
 package validate
 
 import (
-	"io/fs"
 	"testing"
-	"time"
+
+	"github.com/AlienHeadwars/repo-slice/internal/mocks"
 )
-
-const (
-	validSourcePath      = "valid-source"
-	validManifestPath    = "valid-manifest.txt"
-	invalidSourceAsFile  = "path-is-a-file"
-	invalidManifestAsDir = "path-is-a-dir"
-)
-
-// mockFileInfo implements fs.FileInfo for our mock file system.
-type mockFileInfo struct {
-	name  string
-	isDir bool
-}
-
-func (m mockFileInfo) Name() string       { return m.name }
-func (m mockFileInfo) Size() int64        { return 0 }
-func (m mockFileInfo) Mode() fs.FileMode  { return 0 }
-func (m mockFileInfo) ModTime() time.Time { return time.Time{} }
-func (m mockFileInfo) IsDir() bool        { return m.isDir }
-func (m mockFileInfo) Sys() interface{}   { return nil }
-
-// mockFS implements the FS interface for testing purposes.
-type mockFS struct {
-	files map[string]mockFileInfo
-}
-
-// Stat simulates the Stat operation for our mock file system.
-func (m mockFS) Stat(name string) (fs.FileInfo, error) {
-	if file, ok := m.files[name]; ok {
-		return file, nil
-	}
-	return nil, fs.ErrNotExist
-}
 
 // TestValidateInputs is a unit test that checks the input validation logic.
-// It uses a mock file system to simulate various scenarios, such as missing
-// files or incorrect path types, ensuring the validation function returns
-// errors when expected.
 func TestValidateInputs(t *testing.T) {
-	fsys := mockFS{
-		files: map[string]mockFileInfo{
-			validSourcePath:      {name: validSourcePath, isDir: true},
-			validManifestPath:    {name: validManifestPath, isDir: false},
-			invalidSourceAsFile:  {name: invalidSourceAsFile, isDir: false},
-			invalidManifestAsDir: {name: invalidManifestAsDir, isDir: true},
+	fsys := &mocks.MockFS{
+		Files: map[string]bool{
+			"valid-source":       true,
+			"valid-manifest.txt": false,
+			"path-is-a-file":     false,
+			"path-is-a-dir":      true,
 		},
 	}
 
@@ -59,11 +23,11 @@ func TestValidateInputs(t *testing.T) {
 		cfg     Config
 		wantErr bool
 	}{
-		{"Valid paths", Config{SourcePath: validSourcePath, ManifestPath: validManifestPath}, false},
-		{"Source does not exist", Config{SourcePath: "non-existent", ManifestPath: validManifestPath}, true},
-		{"Source is a file", Config{SourcePath: invalidSourceAsFile, ManifestPath: validManifestPath}, true},
-		{"Manifest does not exist", Config{SourcePath: validSourcePath, ManifestPath: "non-existent.txt"}, true},
-		{"Manifest is a directory", Config{SourcePath: validSourcePath, ManifestPath: invalidManifestAsDir}, true},
+		{"Valid paths", Config{SourcePath: "valid-source", ManifestPath: "valid-manifest.txt"}, false},
+		{"Source does not exist", Config{SourcePath: "non-existent", ManifestPath: "valid-manifest.txt"}, true},
+		{"Source is a file", Config{SourcePath: "path-is-a-file", ManifestPath: "valid-manifest.txt"}, true},
+		{"Manifest does not exist", Config{SourcePath: "valid-source", ManifestPath: "non-existent.txt"}, true},
+		{"Manifest is a directory", Config{SourcePath: "valid-source", ManifestPath: "path-is-a-dir"}, true},
 	}
 
 	for _, tc := range testCases {
