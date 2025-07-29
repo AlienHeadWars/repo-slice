@@ -22,7 +22,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: '1.24.5'
-
+      
       - name: Run linter
         uses: golangci/golangci-lint-action@v8
         with:
@@ -32,12 +32,13 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y rsync
 
       - name: Run all tests and generate coverage profile
-        # This command runs all tests, including integration tests via the -tags flag.
-        # The -coverpkg flag is used to define the scope of the coverage report.
-        # We list all packages and then use grep to filter out the /mocks
-        # directory, as test utilities should not be included in coverage metrics.
+        # This command runs all tests and generates a coverage profile.
+        # The coverpkg flag is built by listing all packages, filtering out the
+        # mocks directory, and then formatting the list into a single,
+        # comma-separated string as required by the 'go test' tool.
         run: |
-          go test -v -coverprofile=coverage.out -coverpkg=$(go list ./... | grep -v /mocks) -tags=integration ./...
+          PKGS=$(go list ./... | grep -v /mocks | tr '\n' ',' | sed 's/,$//')
+          go test -v -coverprofile=coverage.out -coverpkg=$PKGS -tags=integration ./...
 
       - name: Send coverage report to Coveralls
         uses: coverallsapp/github-action@v2
