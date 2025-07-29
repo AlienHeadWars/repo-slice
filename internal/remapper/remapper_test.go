@@ -67,7 +67,14 @@ func TestRemapExtensions(t *testing.T) {
 			},
 			extMap:         baseExtMap,
 			wantErr:        true,
-			expectedRename: "component.ts", // It will attempt to rename to this
+			expectedRename: "component.ts",
+		},
+		{
+			name:           "handles walkdir error",
+			mockFS:         &mocks.MockFS{WalkErr: errors.New("walk failed")},
+			extMap:         baseExtMap,
+			wantErr:        true,
+			expectedRename: "",
 		},
 	}
 
