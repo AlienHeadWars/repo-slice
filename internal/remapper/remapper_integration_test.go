@@ -13,7 +13,7 @@ import (
 	"testing"
 )
 
-func TestLiveFS_WalkAndRename(t *testing.T) {
+func TestLiveFSWalkAndRename(t *testing.T) {
 	// Setup a temporary directory with a file.
 	rootDir, err := os.MkdirTemp("", "livefs-test-*")
 	if err != nil {

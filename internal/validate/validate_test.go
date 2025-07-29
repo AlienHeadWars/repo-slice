@@ -7,14 +7,23 @@ import (
 	"github.com/AlienHeadwars/repo-slice/internal/mocks"
 )
 
+const (
+	validSource     = "valid-source"
+	validManifest   = "valid-manifest.txt"
+	sourceAsFile    = "path-is-a-file"
+	manifestAsDir   = "path-is-a-dir"
+	nonExistentFile = "non-existent"
+	nonExistentTxt  = "non-existent.txt"
+)
+
 // TestValidateInputs is a unit test that checks the input validation logic.
 func TestValidateInputs(t *testing.T) {
 	fsys := &mocks.MockFS{
 		Files: map[string]bool{
-			"valid-source":       true,
-			"valid-manifest.txt": false,
-			"path-is-a-file":     false,
-			"path-is-a-dir":      true,
+			validSource:   true,
+			validManifest: false,
+			sourceAsFile:  false,
+			manifestAsDir: true,
 		},
 	}
 
@@ -23,11 +32,11 @@ func TestValidateInputs(t *testing.T) {
 		cfg     Config
 		wantErr bool
 	}{
-		{"Valid paths", Config{SourcePath: "valid-source", ManifestPath: "valid-manifest.txt"}, false},
-		{"Source does not exist", Config{SourcePath: "non-existent", ManifestPath: "valid-manifest.txt"}, true},
-		{"Source is a file", Config{SourcePath: "path-is-a-file", ManifestPath: "valid-manifest.txt"}, true},
-		{"Manifest does not exist", Config{SourcePath: "valid-source", ManifestPath: "non-existent.txt"}, true},
-		{"Manifest is a directory", Config{SourcePath: "valid-source", ManifestPath: "path-is-a-dir"}, true},
+		{"Valid paths", Config{SourcePath: validSource, ManifestPath: validManifest}, false},
+		{"Source does not exist", Config{SourcePath: nonExistentFile, ManifestPath: validManifest}, true},
+		{"Source is a file", Config{SourcePath: sourceAsFile, ManifestPath: validManifest}, true},
+		{"Manifest does not exist", Config{SourcePath: validSource, ManifestPath: nonExistentTxt}, true},
+		{"Manifest is a directory", Config{SourcePath: validSource, ManifestPath: manifestAsDir}, true},
 	}
 
 	for _, tc := range testCases {

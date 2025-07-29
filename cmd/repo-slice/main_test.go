@@ -12,6 +12,12 @@ import (
 	"github.com/AlienHeadwars/repo-slice/internal/validate"
 )
 
+const (
+	flagSource   = "--source"
+	flagManifest = "--manifest"
+	flagOutput   = "--output"
+)
+
 // mockFS is a mock implementation of the FileSystem interface for testing.
 type mockFS struct {
 	validateErr error
@@ -44,12 +50,14 @@ type mockRemapper struct {
 func (m *mockRemapper) ParseExtensionMap(mapStr string) (map[string]string, error) {
 	return nil, m.parseErr
 }
-func (m *mockRemapper) RemapExtensions(dir string, extMap map[string]string) error { return m.remapErr }
+func (m *mockRemapper) RemapExtensions(dir string, extMap map[string]string) error {
+	return m.remapErr
+}
 
 // TestRunUnit tests the error-handling paths of the run function using mocks.
 func TestRunUnit(t *testing.T) {
-	validArgs := []string{"--manifest", "m.txt", "--source", "s", "--output", "o"}
-	remapArgs := []string{"--manifest", "m.txt", "--source", "s", "--output", "o", "--extension-map", "tsx:ts"}
+	validArgs := []string{flagManifest, "m.txt", flagSource, "s", flagOutput, "o"}
+	remapArgs := []string{flagManifest, "m.txt", flagSource, "s", flagOutput, "o", "--extension-map", "tsx:ts"}
 
 	testCases := []struct {
 		name     string
@@ -107,7 +115,7 @@ func TestRunIntegration(t *testing.T) {
 
 	outputPath := filepath.Join(rootDir, "output")
 
-	args := []string{"--manifest", manifestPath, "--source", sourceDir, "--output", outputPath, "--extension-map", "tsx:ts"}
+	args := []string{flagManifest, manifestPath, flagSource, sourceDir, flagOutput, outputPath, "--extension-map", "tsx:ts"}
 	err = run(args, &liveFS{}, &liveSlicer{}, &liveRemapper{})
 
 	if err != nil {
