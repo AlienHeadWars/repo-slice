@@ -76,6 +76,13 @@ func TestRemapExtensions(t *testing.T) {
 			wantErr:        true,
 			expectedRename: "",
 		},
+		{
+			name:           "handles walkdir func error",
+			mockFS:         &mocks.MockFS{WalkFnErr: errors.New("walk func failed")},
+			extMap:         baseExtMap,
+			wantErr:        true,
+			expectedRename: "",
+		},
 	}
 
 	for _, tc := range testCases {

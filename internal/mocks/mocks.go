@@ -36,7 +36,8 @@ func (m MockFileInfo) Sys() interface{} { return nil }
 type MockFS struct {
 	Files      map[string]bool // path -> isDir
 	RenameErr  error
-	WalkErr    error // New field to simulate a WalkDir error.
+	WalkErr    error
+	WalkFnErr  error // New field to simulate an error passed to the walk function.
 	RenameFrom string
 	RenameTo   string
 }
@@ -57,7 +58,8 @@ func (m *MockFS) WalkDir(root string, fn fs.WalkDirFunc) error {
 	}
 	for path, isDir := range m.Files {
 		d := fs.FileInfoToDirEntry(MockFileInfo{FileName: path, IsDirBool: isDir})
-		if err := fn(path, d, nil); err != nil {
+		// Pass the WalkFnErr to the callback to simulate a file system error during iteration.
+		if err := fn(path, d, m.WalkFnErr); err != nil {
 			return err
 		}
 	}
