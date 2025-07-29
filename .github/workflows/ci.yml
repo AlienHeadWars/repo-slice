@@ -23,15 +23,19 @@ jobs:
         with:
           go-version: '1.24.5'
 
+      - name: Install rsync
+        run: sudo apt-get update && sudo apt-get install -y rsync
+
       - name: Run linter
         uses: golangci/golangci-lint-action@v8
         with:
           version: v2.3.0
 
-      - name: Install rsync
-        run: sudo apt-get update && sudo apt-get install -y rsync
-
       - name: Run all tests and generate coverage profile
+        # This command runs all tests, including integration tests via the -tags flag.
+        # The -coverpkg flag is used to define the scope of the coverage report.
+        # We list all packages and then use grep to filter out the /mocks
+        # directory, as test utilities should not be included in coverage metrics.
         run: |
           go test -v -coverprofile=coverage.out -coverpkg=$(go list ./... | grep -v /mocks) -tags=integration ./...
 
