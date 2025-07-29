@@ -23,13 +23,13 @@ jobs:
         with:
           go-version: '1.24.5'
 
-      - name: Install rsync
-        run: sudo apt-get update && sudo apt-get install -y rsync
-
       - name: Run linter
         uses: golangci/golangci-lint-action@v8
         with:
           version: v2.3.0
+
+      - name: Install rsync
+        run: sudo apt-get update && sudo apt-get install -y rsync
 
       - name: Run all tests and generate coverage profile
         # This command runs all tests, including integration tests via the -tags flag.
