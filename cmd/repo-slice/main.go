@@ -15,6 +15,7 @@ import (
 	"io"
 	"os"
 
+	"github.com/AlienHeadwars/repo-slice/internal/remapper"
 	"github.com/AlienHeadwars/repo-slice/internal/slicer"
 	"github.com/AlienHeadwars/repo-slice/internal/validate"
 )
@@ -24,6 +25,7 @@ type Config struct {
 	ManifestPath string
 	SourcePath   string
 	OutputPath   string
+	ExtensionMap string
 }
 
 // FileSystem defines an interface for file system operations needed by run.
@@ -36,6 +38,12 @@ type FileSystem interface {
 type Slicer interface {
 	ParseManifest(r io.Reader) ([]string, error)
 	Slice(source, output string, files []string) error
+}
+
+// Remapper defines an interface for the file remapping logic.
+type Remapper interface {
+	ParseExtensionMap(mapStr string) (map[string]string, error)
+	RemapExtensions(dir string, extMap map[string]string) error
 }
 
 // liveFS is a concrete implementation of the FileSystem interface.
@@ -55,21 +63,31 @@ func (s *liveSlicer) ParseManifest(r io.Reader) ([]string, error) {
 	return slicer.ParseManifest(r)
 }
 func (s *liveSlicer) Slice(source, output string, files []string) error {
-	// Inject the concrete dependencies here.
 	executor := &slicer.CmdExecutor{}
 	filer := &slicer.LiveTempFiler{}
 	return slicer.Slice(source, output, files, executor, filer)
 }
 
+// liveRemapper is a concrete implementation of the Remapper interface.
+type liveRemapper struct{}
+
+func (r *liveRemapper) ParseExtensionMap(mapStr string) (map[string]string, error) {
+	return remapper.ParseExtensionMap(mapStr)
+}
+func (r *liveRemapper) RemapExtensions(dir string, extMap map[string]string) error {
+	fsys := &remapper.LiveFS{}
+	return remapper.RemapExtensions(dir, extMap, fsys)
+}
+
 func main() {
-	if err := run(os.Args[1:], &liveFS{}, &liveSlicer{}); err != nil {
+	if err := run(os.Args[1:], &liveFS{}, &liveSlicer{}, &liveRemapper{}); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }
 
 // run executes the main logic of the application.
-func run(args []string, fsys FileSystem, slicer Slicer) (err error) {
+func run(args []string, fsys FileSystem, slicer Slicer, remapper Remapper) (err error) {
 	cfg, err := parseArgs(args)
 	if err != nil {
 		return err
@@ -102,6 +120,17 @@ func run(args []string, fsys FileSystem, slicer Slicer) (err error) {
 		return fmt.Errorf("failed to execute slice operation: %w", err)
 	}
 
+	// Remap extensions if a map is provided.
+	if cfg.ExtensionMap != "" {
+		extMap, err := remapper.ParseExtensionMap(cfg.ExtensionMap)
+		if err != nil {
+			return fmt.Errorf("failed to parse extension map: %w", err)
+		}
+		if err := remapper.RemapExtensions(cfg.OutputPath, extMap); err != nil {
+			return fmt.Errorf("failed to remap extensions: %w", err)
+		}
+	}
+
 	fmt.Printf("Successfully created repository slice in %s\n", cfg.OutputPath)
 	return nil
 }
@@ -111,9 +140,10 @@ func parseArgs(args []string) (Config, error) {
 	var cfg Config
 	fs := flag.NewFlagSet("repo-slice", flag.ContinueOnError)
 
-	fs.StringVar(&cfg.ManifestPath, "manifest", "", "Path to the manifest file (required)")
-	fs.StringVar(&cfg.SourcePath, "source", ".", "The source directory to read from")
-	fs.StringVar(&cfg.OutputPath, "output", "", "The destination directory (required)")
+	fs.StringVar(&cfg.ManifestPath, "manifest", "", "Path to manifest file (required)")
+	fs.StringVar(&cfg.SourcePath, "source", ".", "Source directory")
+	fs.StringVar(&cfg.OutputPath, "output", "", "Destination directory (required)")
+	fs.StringVar(&cfg.ExtensionMap, "extension-map", "", "Comma-separated list of old:new extension pairs")
 
 	if err := fs.Parse(args); err != nil {
 		return Config{}, err
