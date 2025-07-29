@@ -57,6 +57,12 @@ To create a repository slice, you need a manifest file and a source directory. T
 
 ```bash
 repo-slice --manifest="allow-list.txt" --source="./source-repo" --output="./sliced-repo"
+````
+
+To remap file extensions during the slice, use the `--extension-map` flag with a comma-separated list of `old:new` pairs.
+
+```bash
+repo-slice --manifest="allow-list.txt" --source="./source-repo" --output="./sliced-repo" --extension-map="tsx:ts,mdx:md"
 ```
 
 ## Command-Line Reference
@@ -68,6 +74,7 @@ repo-slice --manifest="allow-list.txt" --source="./source-repo" --output="./slic
 | `--manifest` | Path to the "allow-list" file containing paths to include (one per line). | **Yes** | |
 | `--source` | The source directory to read from. | No | `.` |
 | `--output` | The destination directory where the filtered copy will be created. | **Yes**| |
+| `--extension-map` | A comma-separated list of `old:new` extension pairs to remap (e.g., `tsx:ts,mdx:md`). | No | |
 
 ### Exit Codes
 
