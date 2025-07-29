@@ -6,7 +6,21 @@ import (
 	"io/fs"
 	"reflect"
 	"testing"
+	"time"
 )
+
+// mockFileInfo implements fs.FileInfo for our mock file system.
+type mockFileInfo struct {
+	name  string
+	isDir bool
+}
+
+func (m mockFileInfo) Name() string       { return m.name }
+func (m mockFileInfo) Size() int64        { return 0 }
+func (m mockFileInfo) Mode() fs.FileMode  { return 0 }
+func (m mockFileInfo) ModTime() time.Time { return time.Time{} }
+func (m mockFileInfo) IsDir() bool        { return m.isDir }
+func (m mockFileInfo) Sys() interface{}   { return nil }
 
 // mockFS is a mock implementation of the FileSystem interface for testing.
 type mockFS struct {
@@ -62,7 +76,7 @@ func TestParseExtensionMap(t *testing.T) {
 func TestRemapExtensions(t *testing.T) {
 	t.Run("renames matching file", func(t *testing.T) {
 		fsys := &mockFS{files: map[string]bool{"component.tsx": false}}
-		extMap, _ := ParseExtensionMap("tsx:ts")
+		extMap := map[string]string{".tsx": ".ts"}
 		err := RemapExtensions(".", extMap, fsys)
 		if err != nil {
 			t.Fatalf("RemapExtensions() failed: %v", err)
@@ -74,7 +88,7 @@ func TestRemapExtensions(t *testing.T) {
 
 	t.Run("ignores non-matching file", func(t *testing.T) {
 		fsys := &mockFS{files: map[string]bool{"style.css": false}}
-		extMap, _ := ParseExtensionMap("tsx:ts")
+		extMap := map[string]string{".tsx": ".ts"}
 		err := RemapExtensions(".", extMap, fsys)
 		if err != nil {
 			t.Fatalf("RemapExtensions() failed: %v", err)
@@ -89,7 +103,7 @@ func TestRemapExtensions(t *testing.T) {
 			files:     map[string]bool{"component.tsx": false},
 			renameErr: errors.New("rename failed"),
 		}
-		extMap, _ := ParseExtensionMap("tsx:ts")
+		extMap := map[string]string{".tsx": ".ts"}
 		err := RemapExtensions(".", extMap, fsys)
 		if err == nil {
 			t.Error("Expected an error from rename failure, but got nil")

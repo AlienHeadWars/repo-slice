@@ -7,6 +7,7 @@
 package remapper
 
 import (
+	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
@@ -34,7 +35,7 @@ func TestRemapExtensions_Integration(t *testing.T) {
 	_ = os.WriteFile(filepath.Join(rootDir, "component.tsx"), []byte(""), 0644)
 	_ = os.WriteFile(filepath.Join(rootDir, "style.css"), []byte(""), 0644)
 
-	extMap, _ := ParseExtensionMap("tsx:ts")
+	extMap := map[string]string{".tsx": ".ts"}
 	fsys := &liveFS{}
 
 	// Execute the remapping.

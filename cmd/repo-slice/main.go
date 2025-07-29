@@ -22,10 +22,10 @@ import (
 
 // Config holds the configuration options for the repo-slice tool.
 type Config struct {
-	ManifestPath  string
-	SourcePath    string
-	OutputPath    string
-	ExtensionMap  string
+	ManifestPath string
+	SourcePath   string
+	OutputPath   string
+	ExtensionMap string
 }
 
 // FileSystem defines an interface for file system operations needed by run.
@@ -75,8 +75,8 @@ func (r *liveRemapper) ParseExtensionMap(mapStr string) (map[string]string, erro
 	return remapper.ParseExtensionMap(mapStr)
 }
 func (r *liveRemapper) RemapExtensions(dir string, extMap map[string]string) error {
-	// This concrete implementation will be created in the integration test.
-	return errors.New("not implemented") 
+	fsys := &remapper.LiveFS{}
+	return remapper.RemapExtensions(dir, extMap, fsys)
 }
 
 func main() {
