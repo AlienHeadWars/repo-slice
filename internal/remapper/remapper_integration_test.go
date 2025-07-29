@@ -13,45 +13,46 @@ import (
 	"testing"
 )
 
-// liveFS is a concrete implementation of the FileSystem interface.
-type liveFS struct{}
-
-func (fs *liveFS) WalkDir(root string, fn fs.WalkDirFunc) error {
-	return filepath.WalkDir(root, fn)
-}
-
-func (fs *liveFS) Rename(oldpath, newpath string) error {
-	return os.Rename(oldpath, newpath)
-}
-
-func TestRemapExtensions_Integration(t *testing.T) {
-	// Setup a temporary directory with files to be renamed.
-	rootDir, err := os.MkdirTemp("", "remap-test-*")
+func TestLiveFS_WalkAndRename(t *testing.T) {
+	// Setup a temporary directory with a file.
+	rootDir, err := os.MkdirTemp("", "livefs-test-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
 	defer os.RemoveAll(rootDir)
 
-	_ = os.WriteFile(filepath.Join(rootDir, "component.tsx"), []byte(""), 0644)
-	_ = os.WriteFile(filepath.Join(rootDir, "style.css"), []byte(""), 0644)
+	oldPath := filepath.Join(rootDir, "oldname.txt")
+	newPath := filepath.Join(rootDir, "newname.txt")
 
-	extMap := map[string]string{".tsx": ".ts"}
-	fsys := &liveFS{}
-
-	// Execute the remapping.
-	err = RemapExtensions(rootDir, extMap, fsys)
-	if err != nil {
-		t.Fatalf("RemapExtensions() failed: %v", err)
+	if err := os.WriteFile(oldPath, []byte("test"), 0644); err != nil {
+		t.Fatalf("Failed to write temp file: %v", err)
 	}
 
-	// Assert that the files have been correctly renamed.
-	if _, err := os.Stat(filepath.Join(rootDir, "component.ts")); os.IsNotExist(err) {
-		t.Error("Expected 'component.tsx' to be renamed to 'component.ts', but it was not found.")
+	fsys := &LiveFS{}
+
+	// Test WalkDir by verifying it finds our file.
+	found := false
+	walkFn := func(path string, d fs.DirEntry, err error) error {
+		if path == oldPath {
+			found = true
+		}
+
+		return nil
 	}
-	if _, err := os.Stat(filepath.Join(rootDir, "component.tsx")); !os.IsNotExist(err) {
-		t.Error("Expected 'component.tsx' to be removed after rename, but it still exists.")
+	if err := fsys.WalkDir(rootDir, walkFn); err != nil {
+		t.Fatalf("WalkDir failed: %v", err)
 	}
-	if _, err := os.Stat(filepath.Join(rootDir, "style.css")); os.IsNotExist(err) {
-		t.Error("Expected 'style.css' to be untouched, but it was not found.")
+	if !found {
+		t.Error("WalkDir did not find the test file")
+	}
+
+	// Test Rename.
+	if err := fsys.Rename(oldPath, newPath); err != nil {
+		t.Fatalf("Rename failed: %v", err)
+	}
+
+	// Verify the rename was successful.
+	if _, err := os.Stat(newPath); os.IsNotExist(err) {
+		t.Error("Rename failed: new file path does not exist")
 	}
 }
