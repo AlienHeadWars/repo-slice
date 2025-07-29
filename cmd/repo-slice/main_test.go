@@ -17,9 +17,12 @@ type mockFS struct {
 	validateErr error
 	openErr     error
 }
+
 func (m *mockFS) ValidateInputs(cfg validate.Config) error { return m.validateErr }
 func (m *mockFS) Open(name string) (io.ReadCloser, error) {
-	if m.openErr != nil { return nil, m.openErr }
+	if m.openErr != nil {
+		return nil, m.openErr
+	}
 	return io.NopCloser(strings.NewReader("")), nil
 }
 
@@ -28,6 +31,7 @@ type mockSlicer struct {
 	parseErr error
 	sliceErr error
 }
+
 func (m *mockSlicer) ParseManifest(r io.Reader) ([]string, error)       { return nil, m.parseErr }
 func (m *mockSlicer) Slice(source, output string, files []string) error { return m.sliceErr }
 
@@ -36,9 +40,11 @@ type mockRemapper struct {
 	parseErr error
 	remapErr error
 }
-func (m *mockRemapper) ParseExtensionMap(mapStr string) (map[string]string, error) { return nil, m.parseErr }
-func (m *mockRemapper) RemapExtensions(dir string, extMap map[string]string) error { return m.remapErr }
 
+func (m *mockRemapper) ParseExtensionMap(mapStr string) (map[string]string, error) {
+	return nil, m.parseErr
+}
+func (m *mockRemapper) RemapExtensions(dir string, extMap map[string]string) error { return m.remapErr }
 
 // TestRunUnit tests the error-handling paths of the run function using mocks.
 func TestRunUnit(t *testing.T) {
@@ -46,12 +52,12 @@ func TestRunUnit(t *testing.T) {
 	remapArgs := []string{"--manifest", "m.txt", "--source", "s", "--output", "o", "--extension-map", "tsx:ts"}
 
 	testCases := []struct {
-		name    string
-		args    []string
-		fs      FileSystem
-		slicer  Slicer
+		name     string
+		args     []string
+		fs       FileSystem
+		slicer   Slicer
 		remapper Remapper
-		wantErr bool
+		wantErr  bool
 	}{
 		{"Argument parsing fails", []string{"--bad-flag"}, &mockFS{}, &mockSlicer{}, &mockRemapper{}, true},
 		{"Validation fails", validArgs, &mockFS{validateErr: errors.New("validation failed")}, &mockSlicer{}, &mockRemapper{}, true},
@@ -77,15 +83,27 @@ func TestRunUnit(t *testing.T) {
 // TestRunIntegration is a simple end-to-end test.
 func TestRunIntegration(t *testing.T) {
 	rootDir, err := os.MkdirTemp("", "repo-slice-integration-*")
-	if err != nil { t.Fatalf("failed to create temp dir: %v", err) }
-	defer os.RemoveAll(rootDir)
+	if err != nil {
+		t.Fatalf("failed to create temp dir: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := os.RemoveAll(rootDir); err != nil {
+			t.Fatalf("failed to remove temp dir: %v", err)
+		}
+	})
 
 	sourceDir := filepath.Join(rootDir, "source")
-	os.Mkdir(sourceDir, 0755)
-	os.WriteFile(filepath.Join(sourceDir, "component.tsx"), []byte(""), 0644)
+	if err := os.Mkdir(sourceDir, 0755); err != nil {
+		t.Fatalf("failed to create source dir: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(sourceDir, "component.tsx"), []byte(""), 0644); err != nil {
+		t.Fatalf("failed to create component.tsx: %v", err)
+	}
 
 	manifestPath := filepath.Join(rootDir, "manifest.txt")
-	os.WriteFile(manifestPath, []byte("component.tsx"), 0644)
+	if err := os.WriteFile(manifestPath, []byte("component.tsx"), 0644); err != nil {
+		t.Fatalf("failed to create manifest file: %v", err)
+	}
 
 	outputPath := filepath.Join(rootDir, "output")
 
