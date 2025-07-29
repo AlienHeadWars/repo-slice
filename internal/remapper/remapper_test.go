@@ -36,39 +36,52 @@ func TestParseExtensionMap(t *testing.T) {
 }
 
 func TestRemapExtensions(t *testing.T) {
-	t.Run("renames matching file", func(t *testing.T) {
-		fsys := &mocks.MockFS{Files: map[string]bool{"component.tsx": false}}
-		extMap := map[string]string{".tsx": ".ts"}
-		err := RemapExtensions(".", extMap, fsys)
-		if err != nil {
-			t.Fatalf("RemapExtensions() failed: %v", err)
-		}
-		if fsys.RenameTo != "component.ts" {
-			t.Errorf("Expected rename to 'component.ts', got '%s'", fsys.RenameTo)
-		}
-	})
+	baseExtMap := map[string]string{".tsx": ".ts"}
 
-	t.Run("ignores non-matching file", func(t *testing.T) {
-		fsys := &mocks.MockFS{Files: map[string]bool{"style.css": false}}
-		extMap := map[string]string{".tsx": ".ts"}
-		err := RemapExtensions(".", extMap, fsys)
-		if err != nil {
-			t.Fatalf("RemapExtensions() failed: %v", err)
-		}
-		if fsys.RenameTo != "" {
-			t.Errorf("Expected no rename, but got rename to '%s'", fsys.RenameTo)
-		}
-	})
+	testCases := []struct {
+		name           string
+		mockFS         *mocks.MockFS
+		extMap         map[string]string
+		wantErr        bool
+		expectedRename string
+	}{
+		{
+			name:           "renames matching file",
+			mockFS:         &mocks.MockFS{Files: map[string]bool{"component.tsx": false}},
+			extMap:         baseExtMap,
+			wantErr:        false,
+			expectedRename: "component.ts",
+		},
+		{
+			name:           "ignores non-matching file",
+			mockFS:         &mocks.MockFS{Files: map[string]bool{"style.css": false}},
+			extMap:         baseExtMap,
+			wantErr:        false,
+			expectedRename: "",
+		},
+		{
+			name: "handles rename error",
+			mockFS: &mocks.MockFS{
+				Files:     map[string]bool{"component.tsx": false},
+				RenameErr: errors.New("rename failed"),
+			},
+			extMap:         baseExtMap,
+			wantErr:        true,
+			expectedRename: "component.ts", // It will attempt to rename to this
+		},
+	}
 
-	t.Run("handles rename error", func(t *testing.T) {
-		fsys := &mocks.MockFS{
-			Files:     map[string]bool{"component.tsx": false},
-			RenameErr: errors.New("rename failed"),
-		}
-		extMap := map[string]string{".tsx": ".ts"}
-		err := RemapExtensions(".", extMap, fsys)
-		if err == nil {
-			t.Error("Expected an error from rename failure, but got nil")
-		}
-	})
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := RemapExtensions(".", tc.extMap, tc.mockFS)
+
+			if (err != nil) != tc.wantErr {
+				t.Fatalf("RemapExtensions() error = %v, wantErr %v", err, tc.wantErr)
+			}
+
+			if tc.mockFS.RenameTo != tc.expectedRename {
+				t.Errorf("Expected rename to '%s', got '%s'", tc.expectedRename, tc.mockFS.RenameTo)
+			}
+		})
+	}
 }
