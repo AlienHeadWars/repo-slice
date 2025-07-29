@@ -32,7 +32,8 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y rsync
 
       - name: Run all tests and generate coverage profile
-        run: go test -v -coverprofile=coverage.out ./... -tags=integration
+        run: |
+          go test -v -coverprofile=coverage.out -coverpkg=$(go list ./... | grep -v /mocks) -tags=integration ./...
 
       - name: Send coverage report to Coveralls
         uses: coverallsapp/github-action@v2
