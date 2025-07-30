@@ -1,0 +1,27 @@
+# file: .github/workflows/release.yml
+name: Release
+
+on:
+  push:
+    branches:
+      - 'main'
+
+jobs:
+  tag:
+    name: "Create Git Tag"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # This permission is required to push a new tag to the repository
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create Tag
+        # This action analyzes commit messages since the last tag,
+        # determines the next semantic version, and creates a new tag.
+        id: create_tag
+        uses: anothrNick/github-tag-action@1.70.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WITH_V: true
+          DEFAULT_BUMP: patch
