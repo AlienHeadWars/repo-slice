@@ -44,20 +44,55 @@ The workflow is straightforward:
 
 ## Getting Started
 
+### Prerequisites
+
+To use `repo-slice`, you will need the following tools installed on your system:
+* **Go**: Version 1.24 or newer.
+* **`rsync`**: This tool relies on the `rsync` command being available in the system's `PATH`.
+
+
 ### Installation
 
-`repo-slice` is a self-contained Go binary. Installation steps will be provided upon the first official release.
+Once you have the prerequisites, you can install `repo-slice` with a single command:
 
-**Runtime Dependencies:**
-* **`rsync`**: This tool relies on the `rsync` command being available in the system's `PATH`. Please ensure it is installed on the machine or CI runner where you intend to run `repo-slice`.
+```bash
+go install [github.com/AlienHeadwars/repo-slice@latest](https://github.com/AlienHeadwars/repo-slice@latest)
+````
 
-### Basic Usage
+This will download the source code, compile it, and place the `repo-slice` executable in your Go binary path, ready to be used.
 
-To create a repository slice, you need a manifest file and a source directory. The following command will read the `allow-list.txt`, process the `./source-repo` directory, and create a filtered copy at `./sliced-repo`.
+## Usage
+
+### 1\. Create a Manifest File
+
+The core of `repo-slice` is the manifest file. This is a simple text file (e.g., `allow-list.txt`) that explicitly lists every file and directory you want to include in your slice.
+
+**Format Rules:**
+
+  * Each entry must be on a new line.
+  * Paths should be relative to the `--source` directory.
+  * Lines starting with `#` are treated as comments and are ignored.
+  * Empty lines are ignored.
+
+**Example `allow-list.txt`:**
+
+```
+# Include the main package and the slicer utility.
+cmd/repo-slice/main.go
+internal/slicer/
+
+# Also include the project's license and README.
+LICENSE
+README.md
+```
+
+### 2\. Run the Command
+
+Use the `repo-slice` command, pointing to your manifest and specifying a source and output directory.
 
 ```bash
 repo-slice --manifest="allow-list.txt" --source="./source-repo" --output="./sliced-repo"
-````
+```
 
 To remap file extensions during the slice, use the `--extension-map` flag with a comma-separated list of `old:new` pairs.
 
@@ -78,7 +113,7 @@ repo-slice --manifest="allow-list.txt" --source="./source-repo" --output="./slic
 
 ### Exit Codes
 
-*(This section will formally document the tool's exit codes to aid in scripting and debugging, as per rule:styleguide:formal-syntax).*
+*(This section will formally document the tool's exit codes to aid in scripting and debugging).*
 
 ## Quality Assurance
 
