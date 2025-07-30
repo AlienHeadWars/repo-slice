@@ -67,7 +67,21 @@ The `<type>` in the title must be one of the following:
 
 ### Golden Rule: Atomic Commits
 
-Commits must be small, atomic, and represent a single logical change.  Avoid large, multi-purpose commits. 
+Commits must be small, atomic, and represent a single logical change.  Avoid large, multi-purpose commits.
+
+### Automated Versioning
+
+This project uses an automated release process that creates a new version tag on every merge to `main`. The type of version bump (major, minor, or patch) is determined by special hashtags in the commit messages of a pull request.
+
+To control the version, include one of the following hashtags in the body of your commit message:
+
+* `#major`: For any breaking change that is not backward-compatible.
+* `#minor`: For any new user-facing feature (`feat:`).
+* `#patch`: For any bug fix or minor improvement (`fix:`).
+* `#none`: For any change that does not affect the user, such as documentation (`docs:`), CI/CD updates (`chore:`), or refactoring (`refactor:`).
+
+If no hashtag is provided, the version will be bumped by a `patch` release by default. If multiple commits in a PR have different hashtags, the one with the highest precedence (`major` > `minor` > `patch`) will be used.
+
 
 ## Coding Standards
 

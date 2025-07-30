@@ -88,6 +88,11 @@ This project is committed to a high standard of code quality and security. To en
 * **SonarCloud**: For continuous static analysis to detect bugs, vulnerabilities, and code smells.
 * **Snyk**: For scanning dependencies against a database of known open-source vulnerabilities.
 * **Dependabot**: For automatically keeping our dependencies up-to-date.
+
+## Versioning
+
+This project follows [Semantic Versioning](https://semver.org/). We use an automated release process that creates a new version tag on every merge to the `main` branch. See our [Contributing Guide](CONTRIBUTING.md#automated-versioning) for details on how commit messages influence the version number.
+
 ## Contributing
 
 We welcome contributions\! Please see our [CONTRIBUTING.md](https://www.google.com/search?q=CONTRIBUTING.md) for detailed standards and procedures.
