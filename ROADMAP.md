@@ -28,6 +28,7 @@ This document outlines the development milestones to get `repo-slice` to its fir
 
 **Goal**: To make the well-tested tool easily consumable by the community.
 
+- [x] Set up automated semantic versioning on merge to main.
 - Create a release workflow to automatically build and attach binaries to a GitHub Release.
 - Finalize the `action.yml` to use the released binaries.
 - Test the end-to-end GitHub Action workflow.
