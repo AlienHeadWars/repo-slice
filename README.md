@@ -48,8 +48,10 @@ The workflow is straightforward:
 
 To use `repo-slice`, you will need the following tools installed on your system:
 * **Go**: Version 1.24 or newer.
-* **`rsync`**: This tool relies on the `rsync` command being available in the system's `PATH`.
-
+* **`rsync`**: This tool is a required runtime dependency. You can install it using your system's package manager:
+    * **Linux (Debian/Ubuntu):** `sudo apt-get update && sudo apt-get install rsync`
+    * **macOS (Homebrew):** `brew install rsync`
+    * **Windows:** `rsync` is included with [Git for Windows](https://git-scm.com/download/win). Ensure it is available in your `PATH`.
 
 ### Installation
 
