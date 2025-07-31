@@ -45,7 +45,7 @@ A commit message must consist of a title and a body, separated by a blank line.
 <A detailed explanation of the "why" behind the change. This body is
 required for all non-trivial changes.>
 
-<Signed-off-by: Author Name [author.email@dugoutsanddragons.com](mailto:author.email@dugoutsanddragons.com)>
+<Signed-off-by: Author Name <author.email@example.com>>
 
 ```
 
