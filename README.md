@@ -58,7 +58,7 @@ To use `repo-slice`, you will need the following tools installed on your system:
 Once you have the prerequisites, you can install `repo-slice` with a single command:
 
 ```bash
-go install github.com/AlienHeadwars/repo-slice@latest
+go install github.com/AlienHeadwars/repo-slice/cmd/repo-slice@latest
 ````
 
 This will download the source code, compile it, and place the `repo-slice` executable in your Go binary path, ready to be used.
