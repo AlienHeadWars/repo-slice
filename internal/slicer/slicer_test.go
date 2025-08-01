@@ -4,8 +4,6 @@ package slicer
 import (
 	"errors"
 	"fmt"
-	"reflect"
-	"strings"
 	"testing"
 )
 
@@ -25,39 +23,6 @@ func (m *mockExecutor) Run(workDir, command string, args ...string) error {
 		return errors.New("mock executor error")
 	}
 	return nil
-}
-
-// errorReader is a mock io.Reader that always returns an error.
-type errorReader struct{}
-
-func (e errorReader) Read(p []byte) (n int, err error) {
-	return 0, errors.New("mock reader error")
-}
-
-func TestParseManifest(t *testing.T) {
-	t.Run("successful parse", func(t *testing.T) {
-		manifestContent := `
-			file1.go
-			  dir/file2.go  
-			# A comment to be ignored
-			dir2/
-		`
-		reader := strings.NewReader(manifestContent)
-		expected := []string{"file1.go", "dir/file2.go", "dir2/"}
-		actual, err := ParseManifest(reader)
-		if err != nil {
-			t.Fatalf("ParseManifest() returned an unexpected error: %v", err)
-		}
-		if !reflect.DeepEqual(actual, expected) {
-			t.Errorf("ParseManifest() = %v, want %v", actual, expected)
-		}
-	})
-	t.Run("reader error", func(t *testing.T) {
-		_, err := ParseManifest(errorReader{})
-		if err == nil {
-			t.Error("ParseManifest() with a failing reader should have returned an error, but did not")
-		}
-	})
 }
 
 // TestSliceConstructsCorrectFilterArgument verifies that the Slice function calls

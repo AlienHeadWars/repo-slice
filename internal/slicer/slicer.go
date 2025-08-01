@@ -2,12 +2,9 @@
 package slicer
 
 import (
-	"bufio"
 	"bytes"
 	"fmt"
-	"io"
 	"os/exec"
-	"strings"
 )
 
 // Executor defines an interface for running external commands from a specific
@@ -36,23 +33,6 @@ func (e CmdExecutor) Run(workDir, command string, args ...string) error {
 		return fmt.Errorf("command failed with exit code: %w\nSTDERR:\n%s", err, stderr.String())
 	}
 	return nil
-}
-
-// ParseManifest reads and parses a manifest from any io.Reader.
-// This function is now only used for legacy tests and can be removed later.
-func ParseManifest(r io.Reader) ([]string, error) {
-	var paths []string
-	scanner := bufio.NewScanner(r)
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		if line != "" && !strings.HasPrefix(line, "#") {
-			paths = append(paths, line)
-		}
-	}
-	if err := scanner.Err(); err != nil {
-		return nil, fmt.Errorf("error reading manifest content: %w", err)
-	}
-	return paths, nil
 }
 
 // Slice constructs and executes an rsync command to copy files based on a
