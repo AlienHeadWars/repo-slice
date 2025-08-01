@@ -6,7 +6,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"os"
 	"os/exec"
 	"strings"
 )
@@ -15,25 +14,6 @@ import (
 // working directory.
 type Executor interface {
 	Run(workDir, command string, args ...string) error
-}
-
-// TempFiler defines an interface for creating and managing temporary files.
-type TempFiler interface {
-	CreateTemp(dir, pattern string) (TempFile, error)
-}
-
-// TempFile defines an interface for interacting with a temporary file.
-type TempFile interface {
-	io.WriteCloser
-	Name() string
-}
-
-// LiveTempFiler is a concrete implementation of TempFiler using the os package.
-type LiveTempFiler struct{}
-
-// CreateTemp creates a real temporary file using os.CreateTemp.
-func (ltf *LiveTempFiler) CreateTemp(dir, pattern string) (TempFile, error) {
-	return os.CreateTemp(dir, pattern)
 }
 
 // CmdExecutor is a concrete implementation of the Executor interface.
@@ -75,36 +55,8 @@ func ParseManifest(r io.Reader) ([]string, error) {
 }
 
 // Slice constructs and executes an rsync command to copy files.
-func Slice(source, output string, files []string, exec Executor, filer TempFiler) error {
-	tmpFile, err := filer.CreateTemp("", "repo-slice-manifest-*")
-	if err != nil {
-		return fmt.Errorf("failed to create temporary manifest file: %w", err)
-	}
-	defer func() {
-		if err := os.Remove(tmpFile.Name()); err != nil {
-			fmt.Fprintf(os.Stderr, "warning: failed to remove temporary file %s: %v\n", tmpFile.Name(), err)
-		}
-	}()
-
-	if _, err := tmpFile.Write([]byte(strings.Join(files, "\n"))); err != nil {
-		return fmt.Errorf("failed to write to temporary manifest file: %w", err)
-	}
-	if err := tmpFile.Close(); err != nil {
-		return fmt.Errorf("failed to close temporary manifest file: %w", err)
-	}
-
-	args := []string{
-		"-a",
-		"--include-from=" + tmpFile.Name(),
-		"--include=*/",
-		"--exclude=*",
-		".",
-		output,
-	}
-
-	if err := exec.Run(source, "rsync", args...); err != nil {
-		return fmt.Errorf("rsync command failed: %w", err)
-	}
-
+func Slice(source, output, manifestPath string, exec Executor) error {
+	// Implementation to be added in a future step.
+	// This stub ensures the code compiles with the new signature.
 	return nil
 }
