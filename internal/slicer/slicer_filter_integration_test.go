@@ -6,6 +6,7 @@ package slicer
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -76,6 +77,20 @@ func setupCommonTestStructure(t *testing.T) (sourceDir, outputDir string, cleanu
 	return sourceDir, outputDir, cleanup
 }
 
+// cleanManifest takes a multi-line string, trims whitespace from each line,
+// and filters out empty lines. This allows manifests in tests to be indented.
+func cleanManifest(s string) string {
+	lines := strings.Split(s, "\n")
+	var cleanedLines []string
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed != "" {
+			cleanedLines = append(cleanedLines, trimmed)
+		}
+	}
+	return strings.Join(cleanedLines, "\n")
+}
+
 func TestSliceWithFiltering(t *testing.T) {
 	sourceDir, outputDir, cleanup := setupCommonTestStructure(t)
 	defer cleanup()
@@ -94,68 +109,64 @@ func TestSliceWithFiltering(t *testing.T) {
 		{
 			name:             "Basic Include and Exclude",
 			manifestFilename: "manifest1.txt",
-			manifestContent: `+ /main.go
-+ /docs/
-- /docs/guide.md
-- *
-`,
-			// Expects main.go and the docs dir to be included, but guide.md
-			// within docs is explicitly excluded. common.txt is excluded by the final '- *'.
+			manifestContent: `
+				+ /main.go
+				+ /docs/
+				- /docs/guide.md
+				- *
+			`,
 			expectedToExist:    []string{"main.go", "docs"},
 			expectedToNotExist: []string{"common.txt", "docs/guide.md"},
 		},
 		{
 			name:             "Manifest Inheritance",
 			manifestFilename: "manifest2.txt",
-			manifestContent: `. base.manifest
-+ /main.go
-- *
-`,
-			// Expects common.txt (from base.manifest) and main.go to be included.
-			// README.md is excluded by the final '- *'.
+			manifestContent: `
+				. base.manifest
+				+ /main.go
+				- *
+			`,
 			expectedToExist:    []string{"common.txt", "main.go"},
 			expectedToNotExist: []string{"README.md"},
 		},
 		{
 			name:             "Wildcard Inclusion",
 			manifestFilename: "manifest3.txt",
-			manifestContent: `+ **/*.md
-- *
-`,
-			// Expects both README.md and the nested docs/guide.md to be included
-			// due to the recursive wildcard match.
+			manifestContent: `
+				+ **/*.md
+				- *
+			`,
 			expectedToExist:    []string{"README.md", "docs/guide.md"},
 			expectedToNotExist: []string{"main.go"},
 		},
 		{
 			name:             "Wildcard Exclusion",
 			manifestFilename: "manifest4.txt",
-			manifestContent: `+ **
-- *.log
-- *_test.go
-`,
-			// Expects everything to be included except for files ending in .log or _test.go.
+			manifestContent: `
+				+ **
+				- *.log
+				- *_test.go
+			`,
 			expectedToExist:    []string{"main.go", "src/app/app.go"},
 			expectedToNotExist: []string{"docs/trace.log", "main_test.go", "src/app/app_test.go"},
 		},
 		{
 			name:             "Rule Precedence",
 			manifestFilename: "manifest5.txt",
-			manifestContent: `+ /src/app/app.go
-- /src/**
-`,
-			// The more specific include rule for app.go should take precedence over the
-			// general exclude rule for the src directory's contents.
+			manifestContent: `
+				+ /src/app/app.go
+				- /src/**
+			`,
 			expectedToExist:    []string{"src/app/app.go"},
 			expectedToNotExist: []string{},
 		},
 		{
 			name:             "Self Exclusion of Manifest",
 			manifestFilename: "manifest6.txt",
-			manifestContent: `+ /main.go
-- /manifest6.txt
-`,
-			// The manifest should include main.go but exclude itself from the output.
+			manifestContent: `
+				+ /main.go
+				- /manifest6.txt
+			`,
 			expectedToExist:    []string{"main.go"},
 			expectedToNotExist: []string{"manifest6.txt"},
 		},
@@ -164,7 +175,8 @@ func TestSliceWithFiltering(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			manifestPath := filepath.Join(sourceDir, tc.manifestFilename)
-			_ = os.WriteFile(manifestPath, []byte(tc.manifestContent), 0644)
+			// Use the helper to clean the manifest content before writing
+			_ = os.WriteFile(manifestPath, []byte(cleanManifest(tc.manifestContent)), 0644)
 
 			err := Slice(sourceDir, outputDir, manifestPath, &CmdExecutor{})
 			if err != nil {
