@@ -94,64 +94,68 @@ func TestSliceWithFiltering(t *testing.T) {
 		{
 			name:             "Basic Include and Exclude",
 			manifestFilename: "manifest1.txt",
-			manifestContent: `
-				+ /main.go
-				+ /docs/
-				- /docs/guide.md
-				- *
-			`,
+			manifestContent: `+ /main.go
++ /docs/
+- /docs/guide.md
+- *
+`,
+			// Expects main.go and the docs dir to be included, but guide.md
+			// within docs is explicitly excluded. common.txt is excluded by the final '- *'.
 			expectedToExist:    []string{"main.go", "docs"},
 			expectedToNotExist: []string{"common.txt", "docs/guide.md"},
 		},
 		{
 			name:             "Manifest Inheritance",
 			manifestFilename: "manifest2.txt",
-			manifestContent: `
-				. base.manifest
-				+ /main.go
-				- *
-			`,
+			manifestContent: `. base.manifest
++ /main.go
+- *
+`,
+			// Expects common.txt (from base.manifest) and main.go to be included.
+			// README.md is excluded by the final '- *'.
 			expectedToExist:    []string{"common.txt", "main.go"},
 			expectedToNotExist: []string{"README.md"},
 		},
 		{
 			name:             "Wildcard Inclusion",
 			manifestFilename: "manifest3.txt",
-			manifestContent: `
-				+ **/*.md
-				- *
-			`,
+			manifestContent: `+ **/*.md
+- *
+`,
+			// Expects both README.md and the nested docs/guide.md to be included
+			// due to the recursive wildcard match.
 			expectedToExist:    []string{"README.md", "docs/guide.md"},
 			expectedToNotExist: []string{"main.go"},
 		},
 		{
 			name:             "Wildcard Exclusion",
 			manifestFilename: "manifest4.txt",
-			manifestContent: `
-				+ **
-				- *.log
-				- *_test.go
-			`,
+			manifestContent: `+ **
+- *.log
+- *_test.go
+`,
+			// Expects everything to be included except for files ending in .log or _test.go.
 			expectedToExist:    []string{"main.go", "src/app/app.go"},
 			expectedToNotExist: []string{"docs/trace.log", "main_test.go", "src/app/app_test.go"},
 		},
 		{
 			name:             "Rule Precedence",
 			manifestFilename: "manifest5.txt",
-			manifestContent: `
-				+ /src/app/app.go
-				- /src/**
-			`,
+			manifestContent: `+ /src/app/app.go
+- /src/**
+`,
+			// The more specific include rule for app.go should take precedence over the
+			// general exclude rule for the src directory's contents.
 			expectedToExist:    []string{"src/app/app.go"},
 			expectedToNotExist: []string{},
 		},
 		{
 			name:             "Self Exclusion of Manifest",
 			manifestFilename: "manifest6.txt",
-			manifestContent: `
-				+ /main.go
-				- /manifest6.txt
-			`,
+			manifestContent: `+ /main.go
+- /manifest6.txt
+`,
+			// The manifest should include main.go but exclude itself from the output.
 			expectedToExist:    []string{"main.go"},
 			expectedToNotExist: []string{"manifest6.txt"},
 		},
