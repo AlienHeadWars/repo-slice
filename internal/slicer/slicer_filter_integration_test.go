@@ -9,6 +9,48 @@ import (
 	"testing"
 )
 
+// setupIntegrationTest creates a temporary source and output directory for testing.
+// It returns the paths to these directories and a cleanup function.
+func setupIntegrationTest(t *testing.T) (sourceDir, outputDir string, cleanup func()) {
+	t.Helper()
+	rootDir, err := os.MkdirTemp("", "slicer-filter-test-*")
+	if err != nil {
+		t.Fatalf("failed to create temp root dir: %v", err)
+	}
+
+	sourceDir = filepath.Join(rootDir, "source")
+	if err := os.Mkdir(sourceDir, 0755); err != nil {
+		t.Fatalf("failed to create source dir: %v", err)
+	}
+
+	outputDir = filepath.Join(rootDir, "output")
+	if err := os.Mkdir(outputDir, 0755); err != nil {
+		t.Fatalf("failed to create output dir: %v", err)
+	}
+
+	cleanup = func() {
+		os.RemoveAll(rootDir)
+	}
+
+	return sourceDir, outputDir, cleanup
+}
+
+// assertFileExists checks if a file exists and fails the test if it doesn't.
+func assertFileExists(t *testing.T, path string) {
+	t.Helper()
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		t.Errorf("expected file to exist, but it doesn't: %s", path)
+	}
+}
+
+// assertFileDoesNotExist checks if a file does not exist and fails the test if it does.
+func assertFileDoesNotExist(t *testing.T, path string) {
+	t.Helper()
+	if _, err := os.Stat(path); !os.IsNotExist(err) {
+		t.Errorf("expected file to not exist, but it does: %s", path)
+	}
+}
+
 // setupCommonTestStructure creates a temporary source directory with a standardized
 // set of files and directories to be used across all filter integration tests.
 // It returns the source and output directory paths, and a cleanup function.
@@ -58,8 +100,6 @@ func TestSliceWithFiltering(t *testing.T) {
 				- /docs/guide.md
 				- *
 			`,
-			// Expects main.go and the docs dir to be included, but guide.md
-			// within docs is explicitly excluded. common.txt is excluded by the final '- *'.
 			expectedToExist:    []string{"main.go", "docs"},
 			expectedToNotExist: []string{"common.txt", "docs/guide.md"},
 		},
@@ -71,8 +111,6 @@ func TestSliceWithFiltering(t *testing.T) {
 				+ /main.go
 				- *
 			`,
-			// Expects common.txt (from base.manifest) and main.go to be included.
-			// README.md is excluded by the final '- *'.
 			expectedToExist:    []string{"common.txt", "main.go"},
 			expectedToNotExist: []string{"README.md"},
 		},
@@ -83,8 +121,6 @@ func TestSliceWithFiltering(t *testing.T) {
 				+ **/*.md
 				- *
 			`,
-			// Expects both README.md and the nested docs/guide.md to be included
-			// due to the recursive wildcard match.
 			expectedToExist:    []string{"README.md", "docs/guide.md"},
 			expectedToNotExist: []string{"main.go"},
 		},
@@ -96,7 +132,6 @@ func TestSliceWithFiltering(t *testing.T) {
 				- *.log
 				- *_test.go
 			`,
-			// Expects everything to be included except for files ending in .log or _test.go.
 			expectedToExist:    []string{"main.go", "src/app/app.go"},
 			expectedToNotExist: []string{"docs/trace.log", "main_test.go", "src/app/app_test.go"},
 		},
@@ -107,10 +142,8 @@ func TestSliceWithFiltering(t *testing.T) {
 				+ /src/app/app.go
 				- /src/**
 			`,
-			// The more specific include rule for app.go should take precedence over the
-			// general exclude rule for the src directory's contents.
 			expectedToExist:    []string{"src/app/app.go"},
-			expectedToNotExist: []string{}, // No specific non-existence check needed here
+			expectedToNotExist: []string{},
 		},
 		{
 			name:             "Self Exclusion of Manifest",
@@ -119,7 +152,6 @@ func TestSliceWithFiltering(t *testing.T) {
 				+ /main.go
 				- /manifest6.txt
 			`,
-			// The manifest should include main.go but exclude itself from the output.
 			expectedToExist:    []string{"main.go"},
 			expectedToNotExist: []string{"manifest6.txt"},
 		},
