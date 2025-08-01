@@ -10,6 +10,17 @@ import (
 	"testing"
 )
 
+const (
+	readmeMdFile   = "README.md"
+	commonTxtFile  = "common.txt"
+	mainGoFile     = "main.go"
+	mainTestGoFile = "main_test.go"
+	appGoFile      = "src/app/app.go"
+	appTestGoFile  = "src/app/app_test.go"
+	guideMdFile    = "docs/guide.md"
+	traceLogFile   = "docs/trace.log"
+)
+
 // setupIntegrationTest creates a temporary source and output directory for testing.
 // It returns the paths to these directories and a cleanup function.
 func setupIntegrationTest(t *testing.T) (sourceDir, outputDir string, cleanup func()) {
@@ -60,19 +71,19 @@ func setupCommonTestStructure(t *testing.T) (sourceDir, outputDir string, cleanu
 	sourceDir, outputDir, cleanup = setupIntegrationTest(t)
 
 	// Create a diverse file structure to test against
-	_ = os.WriteFile(filepath.Join(sourceDir, "README.md"), []byte{}, 0644)
-	_ = os.WriteFile(filepath.Join(sourceDir, "common.txt"), []byte{}, 0644)
-	_ = os.WriteFile(filepath.Join(sourceDir, "main.go"), []byte{}, 0644)
-	_ = os.WriteFile(filepath.Join(sourceDir, "main_test.go"), []byte{}, 0644)
+	_ = os.WriteFile(filepath.Join(sourceDir, readmeMdFile), []byte{}, 0644)
+	_ = os.WriteFile(filepath.Join(sourceDir, commonTxtFile), []byte{}, 0644)
+	_ = os.WriteFile(filepath.Join(sourceDir, mainGoFile), []byte{}, 0644)
+	_ = os.WriteFile(filepath.Join(sourceDir, mainTestGoFile), []byte{}, 0644)
 
 	// Create nested directories
 	_ = os.MkdirAll(filepath.Join(sourceDir, "src", "app"), 0755)
-	_ = os.WriteFile(filepath.Join(sourceDir, "src", "app", "app.go"), []byte{}, 0644)
-	_ = os.WriteFile(filepath.Join(sourceDir, "src", "app", "app_test.go"), []byte{}, 0644)
+	_ = os.WriteFile(filepath.Join(sourceDir, appGoFile), []byte{}, 0644)
+	_ = os.WriteFile(filepath.Join(sourceDir, appTestGoFile), []byte{}, 0644)
 
 	_ = os.MkdirAll(filepath.Join(sourceDir, "docs"), 0755)
-	_ = os.WriteFile(filepath.Join(sourceDir, "docs", "guide.md"), []byte{}, 0644)
-	_ = os.WriteFile(filepath.Join(sourceDir, "docs", "trace.log"), []byte{}, 0644)
+	_ = os.WriteFile(filepath.Join(sourceDir, guideMdFile), []byte{}, 0644)
+	_ = os.WriteFile(filepath.Join(sourceDir, traceLogFile), []byte{}, 0644)
 
 	return sourceDir, outputDir, cleanup
 }
@@ -115,8 +126,8 @@ func TestSliceWithFiltering(t *testing.T) {
 				- /docs/guide.md
 				- *
 			`,
-			expectedToExist:    []string{"main.go", "docs"},
-			expectedToNotExist: []string{"common.txt", "docs/guide.md"},
+			expectedToExist:    []string{mainGoFile, "docs"},
+			expectedToNotExist: []string{commonTxtFile, guideMdFile},
 		},
 		{
 			name:             "Manifest Inheritance",
@@ -126,8 +137,8 @@ func TestSliceWithFiltering(t *testing.T) {
 				+ /main.go
 				- *
 			`,
-			expectedToExist:    []string{"common.txt", "main.go"},
-			expectedToNotExist: []string{"README.md"},
+			expectedToExist:    []string{commonTxtFile, mainGoFile},
+			expectedToNotExist: []string{readmeMdFile},
 		},
 		{
 			name:             "Wildcard Inclusion",
@@ -137,8 +148,8 @@ func TestSliceWithFiltering(t *testing.T) {
 				+ **/
 				- *
 			`,
-			expectedToExist:    []string{"README.md", "docs/guide.md"},
-			expectedToNotExist: []string{"main.go"},
+			expectedToExist:    []string{readmeMdFile, guideMdFile},
+			expectedToNotExist: []string{mainGoFile},
 		},
 		{
 			name:             "Wildcard Exclusion",
@@ -148,8 +159,8 @@ func TestSliceWithFiltering(t *testing.T) {
 				- *_test.go
 				+ **
 			`,
-			expectedToExist:    []string{"main.go", "src/app/app.go"},
-			expectedToNotExist: []string{"docs/trace.log", "main_test.go", "src/app/app_test.go"},
+			expectedToExist:    []string{mainGoFile, appGoFile},
+			expectedToNotExist: []string{traceLogFile, mainTestGoFile, appTestGoFile},
 		},
 		{
 			name:             "Rule Precedence",
@@ -158,9 +169,8 @@ func TestSliceWithFiltering(t *testing.T) {
 				- /src/app/app_test.go
 				+ /src/**
 			`,
-			// The specific exclude rule must come before the broad include rule.
-			expectedToExist:    []string{"src/app/app.go"},
-			expectedToNotExist: []string{"src/app/app_test.go"},
+			expectedToExist:    []string{appGoFile},
+			expectedToNotExist: []string{appTestGoFile},
 		},
 		{
 			name:             "Self Exclusion of Manifest",
@@ -169,7 +179,7 @@ func TestSliceWithFiltering(t *testing.T) {
 				+ /main.go
 				- /manifest6.txt
 			`,
-			expectedToExist:    []string{"main.go"},
+			expectedToExist:    []string{mainGoFile},
 			expectedToNotExist: []string{"manifest6.txt"},
 		},
 	}
