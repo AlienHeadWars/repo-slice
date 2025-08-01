@@ -20,29 +20,6 @@ func (m *mockExecutor) Run(workDir, command string, args ...string) error {
 	return nil
 }
 
-// mockTempFile implements the TempFile interface for testing.
-type mockTempFile struct {
-	writeErr error
-	closeErr error
-}
-
-func (m *mockTempFile) Write(p []byte) (n int, err error) { return 0, m.writeErr }
-func (m *mockTempFile) Close() error                      { return m.closeErr }
-func (m *mockTempFile) Name() string                      { return "tempfile" }
-
-// mockTempFiler implements the TempFiler interface for testing.
-type mockTempFiler struct {
-	createErr error
-	file      *mockTempFile
-}
-
-func (m *mockTempFiler) CreateTemp(dir, pattern string) (TempFile, error) {
-	if m.createErr != nil {
-		return nil, m.createErr
-	}
-	return m.file, nil
-}
-
 // errorReader is a mock io.Reader that always returns an error.
 type errorReader struct{}
 
@@ -80,41 +57,20 @@ func TestParseManifest(t *testing.T) {
 func TestSlice(t *testing.T) {
 	sourceDir := "/path/to/source"
 	outputDir := "/tmp/output"
-	files := []string{"file1.go"}
+	manifestPath := "/path/to/manifest.txt"
 
 	testCases := []struct {
 		name    string
-		filer   TempFiler
 		exec    Executor
 		wantErr bool
 	}{
 		{
 			name:    "Happy path",
-			filer:   &mockTempFiler{file: &mockTempFile{}},
 			exec:    &mockExecutor{},
 			wantErr: false,
 		},
 		{
-			name:    "Temp file creation fails",
-			filer:   &mockTempFiler{createErr: errors.New("create failed")},
-			exec:    &mockExecutor{},
-			wantErr: true,
-		},
-		{
-			name:    "Temp file write fails",
-			filer:   &mockTempFiler{file: &mockTempFile{writeErr: errors.New("write failed")}},
-			exec:    &mockExecutor{},
-			wantErr: true,
-		},
-		{
-			name:    "Temp file close fails",
-			filer:   &mockTempFiler{file: &mockTempFile{closeErr: errors.New("close failed")}},
-			exec:    &mockExecutor{},
-			wantErr: true,
-		},
-		{
 			name:    "Executor fails",
-			filer:   &mockTempFiler{file: &mockTempFile{}},
 			exec:    &mockExecutor{returnErr: true},
 			wantErr: true,
 		},
@@ -122,7 +78,7 @@ func TestSlice(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			err := Slice(sourceDir, outputDir, files, tc.exec, tc.filer)
+			err := Slice(sourceDir, outputDir, manifestPath, tc.exec)
 			if (err != nil) != tc.wantErr {
 				t.Errorf("Slice() error = %v, wantErr %v", err, tc.wantErr)
 			}
