@@ -28,7 +28,7 @@ The workflow is straightforward:
 
 ## Core Features
 
-* **Declarative Manifests**: Instead of complex filter patterns, you use a simple, explicit list of files in a manifest. This is easier to read, maintain, and generate programmatically.
+* **Powered by `rsync` Filter Rules**: Instead of a simple allow-list, `repo-slice` leverages `rsync`'s powerful and well-documented filter-rule engine. This allows for simple lists as well as advanced wildcard patterns, inheritance from other rule files, and more.
 * **Automation-Focused**: Designed from the ground up to be a reliable and portable tool for any CI/CD environment like GitHub Actions or GitLab CI.
 * **Branch-Ready Output**: Produces a clean directory structure ready to be committed to a new branch, unlike tools that generate a single text file for prompting.
 * **Extension Mapping**: Optionally remap file extensions during the copy process. This is useful for improving compatibility with tools that don't recognize certain extensions, such as renaming `.tsx` files to `.ts` for better LLM interpretation.
@@ -69,25 +69,32 @@ This will download the source code, compile it, and place the `repo-slice` execu
 
 ### 1\. Create a Manifest File
 
-The core of `repo-slice` is the manifest file. This is a simple text file (e.g., `allow-list.txt`) that explicitly lists every file and directory you want to include in your slice.
+The core of `repo-slice` is the manifest file. This is a text file that uses **`rsync`'s filter-rule syntax** to define which files to include or exclude. For a complete guide on the powerful features available, see the official `rsync` documentation on FILTER RULES.
 
 **Format Rules:**
 
-  * Each entry must be on a new line.
-  * Paths should be relative to the `--source` directory.
+  * Each rule must be on a new line.
   * Lines starting with `#` are treated as comments and are ignored.
-  * Empty lines are ignored.
+  * Use `+` to include a file or directory.
+  * Use `-` to exclude a file or directory.
+  * The first rule that matches a file is the one that takes effect.
 
 **Example `allow-list.txt`:**
 
 ```
-# Include the main package and the slicer utility.
-cmd/repo-slice/main.go
-internal/slicer/
+# Include the main application and the slicer utility.
++ /cmd/repo-slice/main.go
++ /internal/slicer/**
+
+# Exclude all test files from the slicer utility.
+- /internal/slicer/*_test.go
 
 # Also include the project's license and README.
-LICENSE
-README.md
++ /LICENSE
++ /README.md
+
+# Exclude everything else.
+- *
 ```
 
 ### 2\. Run the Command
@@ -123,10 +130,10 @@ repo-slice --manifest="allow-list.txt" --source="./source-repo" --output="./slic
 
 This project is committed to a high standard of code quality and security. To ensure this, we have integrated the following tools into our development process:
 
-* **Coveralls**: For tracking test coverage on every pull request and ensuring it remains high.
-* **SonarCloud**: For continuous static analysis to detect bugs, vulnerabilities, and code smells.
-* **Snyk**: For scanning dependencies against a database of known open-source vulnerabilities.
-* **Dependabot**: For automatically keeping our dependencies up-to-date.
+  * **Coveralls**: For tracking test coverage on every pull request and ensuring it remains high.
+  * **SonarCloud**: For continuous static analysis to detect bugs, vulnerabilities, and code smells.
+  * **Snyk**: For scanning dependencies against a database of known open-source vulnerabilities.
+  * **Dependabot**: For automatically keeping our dependencies up-to-date.
 
 ## Versioning
 
