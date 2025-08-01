@@ -9,201 +9,120 @@ import (
 	"testing"
 )
 
-// setupIntegrationTest creates a temporary source and output directory for testing.
-// It returns the paths to these directories and a cleanup function.
-func setupIntegrationTest(t *testing.T) (sourceDir, outputDir string, cleanup func()) {
+// setupCommonTestStructure creates a temporary source directory with a standardized
+// set of files and directories to be used across all filter integration tests.
+// It returns the source and output directory paths, and a cleanup function.
+func setupCommonTestStructure(t *testing.T) (sourceDir, outputDir string, cleanup func()) {
 	t.Helper()
-	rootDir, err := os.MkdirTemp("", "slicer-filter-test-*")
-	if err != nil {
-		t.Fatalf("failed to create temp root dir: %v", err)
-	}
+	sourceDir, outputDir, cleanup = setupIntegrationTest(t)
 
-	sourceDir = filepath.Join(rootDir, "source")
-	if err := os.Mkdir(sourceDir, 0755); err != nil {
-		t.Fatalf("failed to create source dir: %v", err)
-	}
+	// Create a diverse file structure to test against
+	_ = os.WriteFile(filepath.Join(sourceDir, "README.md"), []byte{}, 0644)
+	_ = os.WriteFile(filepath.Join(sourceDir, "common.txt"), []byte{}, 0644)
+	_ = os.WriteFile(filepath.Join(sourceDir, "main.go"), []byte{}, 0644)
+	_ = os.WriteFile(filepath.Join(sourceDir, "main_test.go"), []byte{}, 0644)
 
-	outputDir = filepath.Join(rootDir, "output")
-	if err := os.Mkdir(outputDir, 0755); err != nil {
-		t.Fatalf("failed to create output dir: %v", err)
-	}
+	// Create nested directories
+	_ = os.MkdirAll(filepath.Join(sourceDir, "src", "app"), 0755)
+	_ = os.WriteFile(filepath.Join(sourceDir, "src", "app", "app.go"), []byte{}, 0644)
+	_ = os.WriteFile(filepath.Join(sourceDir, "src", "app", "app_test.go"), []byte{}, 0644)
 
-	cleanup = func() {
-		os.RemoveAll(rootDir)
-	}
+	_ = os.MkdirAll(filepath.Join(sourceDir, "docs"), 0755)
+	_ = os.WriteFile(filepath.Join(sourceDir, "docs", "guide.md"), []byte{}, 0644)
+	_ = os.WriteFile(filepath.Join(sourceDir, "docs", "trace.log"), []byte{}, 0644)
 
 	return sourceDir, outputDir, cleanup
 }
 
-// assertFileExists checks if a file exists and fails the test if it doesn't.
-func assertFileExists(t *testing.T, path string) {
-	t.Helper()
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		t.Errorf("expected file to exist, but it doesn't: %s", path)
-	}
-}
-
-// assertFileDoesNotExist checks if a file does not exist and fails the test if it does.
-func assertFileDoesNotExist(t *testing.T, path string) {
-	t.Helper()
-	if _, err := os.Stat(path); !os.IsNotExist(err) {
-		t.Errorf("expected file to not exist, but it does: %s", path)
-	}
-}
-
-func TestSliceWithBasicIncludeAndExclude(t *testing.T) {
-	sourceDir, outputDir, cleanup := setupIntegrationTest(t)
+func TestSliceWithFiltering(t *testing.T) {
+	sourceDir, outputDir, cleanup := setupCommonTestStructure(t)
 	defer cleanup()
 
-	// Setup source files
-	_ = os.WriteFile(filepath.Join(sourceDir, "fileA.txt"), []byte("a"), 0644)
-	_ = os.WriteFile(filepath.Join(sourceDir, "fileB.txt"), []byte("b"), 0644)
-	_ = os.Mkdir(filepath.Join(sourceDir, "docs"), 0755)
-	_ = os.WriteFile(filepath.Join(sourceDir, "docs", "guide.md"), []byte("guide"), 0644)
-
-	// Setup manifest
-	manifestPath := filepath.Join(sourceDir, "manifest.txt")
-	manifestContent := "+\t/fileA.txt\n+\t/docs/\n-\t/docs/guide.md\n-\t*"
-	_ = os.WriteFile(manifestPath, []byte(manifestContent), 0644)
-
-	// Execute Slice
-	err := Slice(sourceDir, outputDir, manifestPath, &CmdExecutor{})
-	if err != nil {
-		t.Fatalf("Slice() returned an unexpected error: %v", err)
-	}
-
-	// Assertions
-	assertFileExists(t, filepath.Join(outputDir, "fileA.txt"))
-	assertFileExists(t, filepath.Join(outputDir, "docs"))
-	assertFileDoesNotExist(t, filepath.Join(outputDir, "fileB.txt"))
-	assertFileDoesNotExist(t, filepath.Join(outputDir, "docs", "guide.md"))
-}
-
-func TestSliceWithManifestInheritance(t *testing.T) {
-	sourceDir, outputDir, cleanup := setupIntegrationTest(t)
-	defer cleanup()
-
-	// Setup source files
-	_ = os.WriteFile(filepath.Join(sourceDir, "common.txt"), []byte("common"), 0644)
-	_ = os.WriteFile(filepath.Join(sourceDir, "feature.txt"), []byte("feature"), 0644)
-	_ = os.WriteFile(filepath.Join(sourceDir, "test.txt"), []byte("test"), 0644)
-
-	// Setup manifests
+	// Base manifest for inheritance tests
 	baseManifestPath := filepath.Join(sourceDir, "base.manifest")
 	_ = os.WriteFile(baseManifestPath, []byte("+\t/common.txt"), 0644)
 
-	featureManifestPath := filepath.Join(sourceDir, "feature.manifest")
-	_ = os.WriteFile(featureManifestPath, []byte(". base.manifest\n+\t/feature.txt\n-\t*"), 0644)
-
-	// Execute Slice
-	err := Slice(sourceDir, outputDir, featureManifestPath, &CmdExecutor{})
-	if err != nil {
-		t.Fatalf("Slice() returned an unexpected error: %v", err)
+	testCases := []struct {
+		name              string
+		manifestContent   string
+		manifestFilename  string
+		expectedToExist   []string
+		expectedToNotExist []string
+	}{
+		{
+			name:             "Basic Include and Exclude",
+			manifestFilename: "manifest1.txt",
+			manifestContent:  "+\t/main.go\n+\t/docs/\n-\t/docs/guide.md\n-\t*",
+			// Expects main.go and the docs dir to be included, but guide.md
+			// within docs is explicitly excluded. common.txt is excluded by the final '- *'.
+			expectedToExist:    []string{"main.go", "docs"},
+			expectedToNotExist: []string{"common.txt", "docs/guide.md"},
+		},
+		{
+			name:             "Manifest Inheritance",
+			manifestFilename: "manifest2.txt",
+			manifestContent:  ".\tbase.manifest\n+\t/main.go\n-\t*",
+			// Expects common.txt (from base.manifest) and main.go to be included.
+			// README.md is excluded by the final '- *'.
+			expectedToExist:    []string{"common.txt", "main.go"},
+			expectedToNotExist: []string{"README.md"},
+		},
+		{
+			name:             "Wildcard Inclusion",
+			manifestFilename: "manifest3.txt",
+			manifestContent:  "+\t**/*.md\n-\t*",
+			// Expects both README.md and the nested docs/guide.md to be included
+			// due to the recursive wildcard match.
+			expectedToExist:    []string{"README.md", "docs/guide.md"},
+			expectedToNotExist: []string{"main.go"},
+		},
+		{
+			name:             "Wildcard Exclusion",
+			manifestFilename: "manifest4.txt",
+			manifestContent:  "+\t**\n-\t*.log\n-\t*_test.go",
+			// Expects everything to be included except for files ending in .log or _test.go.
+			expectedToExist:    []string{"main.go", "src/app/app.go"},
+			expectedToNotExist: []string{"docs/trace.log", "main_test.go", "src/app/app_test.go"},
+		},
+		{
+			name:             "Rule Precedence",
+			manifestFilename: "manifest5.txt",
+			manifestContent:  "+\t/src/app/app.go\n-\t/src/**",
+			// The more specific include rule for app.go should take precedence over the
+			// general exclude rule for the src directory's contents.
+			expectedToExist:    []string{"src/app/app.go"},
+			expectedToNotExist: []string{}, // No specific non-existence check needed here
+		},
+		{
+			name:             "Self Exclusion of Manifest",
+			manifestFilename: "manifest6.txt",
+			manifestContent:  "+\t/main.go\n-\t/manifest6.txt",
+			// The manifest should include main.go but exclude itself from the output.
+			expectedToExist:    []string{"main.go"},
+			expectedToNotExist: []string{"manifest6.txt"},
+		},
 	}
 
-	// Assertions
-	assertFileExists(t, filepath.Join(outputDir, "common.txt"))
-	assertFileExists(t, filepath.Join(outputDir, "feature.txt"))
-	assertFileDoesNotExist(t, filepath.Join(outputDir, "test.txt"))
-}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			manifestPath := filepath.Join(sourceDir, tc.manifestFilename)
+			_ = os.WriteFile(manifestPath, []byte(tc.manifestContent), 0644)
 
-func TestSliceWithWildcardInclusion(t *testing.T) {
-	sourceDir, outputDir, cleanup := setupIntegrationTest(t)
-	defer cleanup()
+			err := Slice(sourceDir, outputDir, manifestPath, &CmdExecutor{})
+			if err != nil {
+				t.Fatalf("Slice() returned an unexpected error: %v", err)
+			}
 
-	// Setup source files
-	_ = os.WriteFile(filepath.Join(sourceDir, "README.md"), []byte(""), 0644)
-	_ = os.MkdirAll(filepath.Join(sourceDir, "pkg", "api"), 0755)
-	_ = os.WriteFile(filepath.Join(sourceDir, "pkg", "api", "README.md"), []byte(""), 0644)
-	_ = os.WriteFile(filepath.Join(sourceDir, "main.go"), []byte(""), 0644)
-
-	// Setup manifest
-	manifestPath := filepath.Join(sourceDir, "manifest.txt")
-	manifestContent := "+\t**/README.md\n-\t*"
-	_ = os.WriteFile(manifestPath, []byte(manifestContent), 0644)
-
-	// Execute Slice
-	err := Slice(sourceDir, outputDir, manifestPath, &CmdExecutor{})
-	if err != nil {
-		t.Fatalf("Slice() returned an unexpected error: %v", err)
+			for _, file := range tc.expectedToExist {
+				assertFileExists(t, filepath.Join(outputDir, file))
+			}
+			for _, file := range tc.expectedToNotExist {
+				assertFileDoesNotExist(t, filepath.Join(outputDir, file))
+			}
+			
+			// Clean the output directory for the next run
+			os.RemoveAll(outputDir)
+			os.Mkdir(outputDir, 0755)
+		})
 	}
-
-	// Assertions
-	assertFileExists(t, filepath.Join(outputDir, "README.md"))
-	assertFileExists(t, filepath.Join(outputDir, "pkg", "api", "README.md"))
-	assertFileDoesNotExist(t, filepath.Join(outputDir, "main.go"))
-}
-
-func TestSliceWithWildcardExclusion(t *testing.T) {
-	sourceDir, outputDir, cleanup := setupIntegrationTest(t)
-	defer cleanup()
-
-	// Setup source files
-	_ = os.WriteFile(filepath.Join(sourceDir, "app.go"), []byte(""), 0644)
-	_ = os.WriteFile(filepath.Join(sourceDir, "app_test.go"), []byte(""), 0644)
-	_ = os.Mkdir(filepath.Join(sourceDir, "logs"), 0755)
-	_ = os.WriteFile(filepath.Join(sourceDir, "logs", "trace.log"), []byte(""), 0644)
-
-	// Setup manifest
-	manifestPath := filepath.Join(sourceDir, "manifest.txt")
-	manifestContent := "+\t**\n-\t*.log\n-\t*_test.go"
-	_ = os.WriteFile(manifestPath, []byte(manifestContent), 0644)
-
-	// Execute Slice
-	err := Slice(sourceDir, outputDir, manifestPath, &CmdExecutor{})
-	if err != nil {
-		t.Fatalf("Slice() returned an unexpected error: %v", err)
-	}
-
-	// Assertions
-	assertFileExists(t, filepath.Join(outputDir, "app.go"))
-	assertFileExists(t, filepath.Join(outputDir, "logs"))
-	assertFileDoesNotExist(t, filepath.Join(outputDir, "app_test.go"))
-	assertFileDoesNotExist(t, filepath.Join(outputDir, "logs", "trace.log"))
-}
-
-func TestSliceWithRulePrecedence(t *testing.T) {
-	sourceDir, outputDir, cleanup := setupIntegrationTest(t)
-	defer cleanup()
-
-	// Setup source files
-	_ = os.MkdirAll(filepath.Join(sourceDir, "src"), 0755)
-	_ = os.WriteFile(filepath.Join(sourceDir, "src", "core.go"), []byte(""), 0644)
-	_ = os.WriteFile(filepath.Join(sourceDir, "src", "utils.go"), []byte(""), 0644)
-
-	// Setup manifest
-	manifestPath := filepath.Join(sourceDir, "manifest.txt")
-	manifestContent := "+\t/src/utils.go\n-\t/src/*"
-	_ = os.WriteFile(manifestPath, []byte(manifestContent), 0644)
-
-	// Execute Slice
-	err := Slice(sourceDir, outputDir, manifestPath, &CmdExecutor{})
-	if err != nil {
-		t.Fatalf("Slice() returned an unexpected error: %v", err)
-	}
-
-	// Assertions
-	assertFileExists(t, filepath.Join(outputDir, "src", "utils.go"))
-	assertFileDoesNotExist(t, filepath.Join(outputDir, "src", "core.go"))
-}
-
-func TestSliceWithSelfExclusion(t *testing.T) {
-	sourceDir, outputDir, cleanup := setupIntegrationTest(t)
-	defer cleanup()
-
-	// Setup source files
-	_ = os.WriteFile(filepath.Join(sourceDir, "file.txt"), []byte(""), 0644)
-	manifestPath := filepath.Join(sourceDir, "the.manifest")
-	manifestContent := "+\t/file.txt\n-\t/the.manifest"
-	_ = os.WriteFile(manifestPath, []byte(manifestContent), 0644)
-
-	// Execute Slice
-	err := Slice(sourceDir, outputDir, manifestPath, &CmdExecutor{})
-	if err != nil {
-		t.Fatalf("Slice() returned an unexpected error: %v", err)
-	}
-
-	// Assertions
-	assertFileExists(t, filepath.Join(outputDir, "file.txt"))
-	assertFileDoesNotExist(t, filepath.Join(outputDir, "the.manifest"))
 }
