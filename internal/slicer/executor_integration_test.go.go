@@ -9,9 +9,9 @@ import (
 	"testing"
 )
 
-// TestCmdExecutor_RunFails is an integration test for the CmdExecutor that
+// TestCmdExecutorRunFails is an integration test for the CmdExecutor that
 // verifies its error handling for both invalid flags and permission errors.
-func TestCmdExecutor_RunFails(t *testing.T) {
+func TestCmdExecutorRunFails(t *testing.T) {
 	executor := CmdExecutor{}
 
 	t.Run("invalid flag", func(t *testing.T) {
