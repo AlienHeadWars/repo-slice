@@ -12,7 +12,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io"
 	"os"
 
 	"github.com/AlienHeadwars/repo-slice/internal/remapper"
@@ -31,13 +30,11 @@ type Config struct {
 // FileSystem defines an interface for file system operations needed by run.
 type FileSystem interface {
 	ValidateInputs(cfg validate.Config) error
-	Open(name string) (io.ReadCloser, error)
 }
 
 // Slicer defines an interface for the core application logic.
 type Slicer interface {
-	ParseManifest(r io.Reader) ([]string, error)
-	Slice(source, output string, files []string) error
+	Slice(source, output, manifestPath string) error
 }
 
 // Remapper defines an interface for the file remapping logic.
@@ -52,20 +49,13 @@ type liveFS struct{}
 func (fs *liveFS) ValidateInputs(cfg validate.Config) error {
 	return validate.ValidateInputs(cfg, &validate.LiveFS{})
 }
-func (fs *liveFS) Open(name string) (io.ReadCloser, error) {
-	return os.Open(name)
-}
 
 // liveSlicer is a concrete implementation of the Slicer interface.
 type liveSlicer struct{}
 
-func (s *liveSlicer) ParseManifest(r io.Reader) ([]string, error) {
-	return slicer.ParseManifest(r)
-}
-func (s *liveSlicer) Slice(source, output string, files []string) error {
+func (s *liveSlicer) Slice(source, output, manifestPath string) error {
 	executor := &slicer.CmdExecutor{}
-	filer := &slicer.LiveTempFiler{}
-	return slicer.Slice(source, output, files, executor, filer)
+	return slicer.Slice(source, output, manifestPath, executor)
 }
 
 // liveRemapper is a concrete implementation of the Remapper interface.
@@ -101,22 +91,7 @@ func run(args []string, fsys FileSystem, slicer Slicer, remapper Remapper) (err 
 		return err
 	}
 
-	manifestFile, err := fsys.Open(cfg.ManifestPath)
-	if err != nil {
-		return fmt.Errorf("could not open manifest file: %w", err)
-	}
-	defer func() {
-		if closeErr := manifestFile.Close(); err == nil {
-			err = closeErr
-		}
-	}()
-
-	files, err := slicer.ParseManifest(manifestFile)
-	if err != nil {
-		return fmt.Errorf("failed to parse manifest: %w", err)
-	}
-
-	if err := slicer.Slice(cfg.SourcePath, cfg.OutputPath, files); err != nil {
+	if err := slicer.Slice(cfg.SourcePath, cfg.OutputPath, cfg.ManifestPath); err != nil {
 		return fmt.Errorf("failed to execute slice operation: %w", err)
 	}
 
