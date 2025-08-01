@@ -137,8 +137,6 @@ func TestSliceWithFiltering(t *testing.T) {
 				+ **/
 				- *
 			`,
-			// The key change is `+ **/`. This includes all directories, allowing
-			// rsync to traverse the full tree to find all files that match `**/*.md`.
 			expectedToExist:    []string{"README.md", "docs/guide.md"},
 			expectedToNotExist: []string{"main.go"},
 		},
@@ -150,8 +148,6 @@ func TestSliceWithFiltering(t *testing.T) {
 				- *_test.go
 				+ **
 			`,
-			// The key change is the order. Exclude rules must come before the broad
-			// include rule (`+ **`). Rsync uses the "first match wins" principle.
 			expectedToExist:    []string{"main.go", "src/app/app.go"},
 			expectedToNotExist: []string{"docs/trace.log", "main_test.go", "src/app/app_test.go"},
 		},
@@ -159,10 +155,10 @@ func TestSliceWithFiltering(t *testing.T) {
 			name:             "Rule Precedence",
 			manifestFilename: "manifest5.txt",
 			manifestContent: `
-				+ /src/**
 				- /src/app/app_test.go
+				+ /src/**
 			`,
-			// A specific exclude (`- /src/app/app_test.go`) overrides a broad include (`+ /src/**`).
+			// The specific exclude rule must come before the broad include rule.
 			expectedToExist:    []string{"src/app/app.go"},
 			expectedToNotExist: []string{"src/app/app_test.go"},
 		},
