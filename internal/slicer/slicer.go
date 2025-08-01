@@ -39,6 +39,7 @@ func (e CmdExecutor) Run(workDir, command string, args ...string) error {
 }
 
 // ParseManifest reads and parses a manifest from any io.Reader.
+// This function is now only used for legacy tests and can be removed later.
 func ParseManifest(r io.Reader) ([]string, error) {
 	var paths []string
 	scanner := bufio.NewScanner(r)
@@ -54,9 +55,20 @@ func ParseManifest(r io.Reader) ([]string, error) {
 	return paths, nil
 }
 
-// Slice constructs and executes an rsync command to copy files.
+// Slice constructs and executes an rsync command to copy files based on a
+// manifest file that uses rsync filter-rule syntax.
 func Slice(source, output, manifestPath string, exec Executor) error {
-	// Implementation to be added in a future step.
-	// This stub ensures the code compiles with the new signature.
+	args := []string{
+		"-a", // Archive mode to preserve permissions, ownership, etc.
+		"--filter",
+		fmt.Sprintf("merge %s", manifestPath),
+		".",    // Source directory (relative to the workDir)
+		output, // Destination directory
+	}
+
+	if err := exec.Run(source, "rsync", args...); err != nil {
+		return fmt.Errorf("rsync command failed: %w", err)
+	}
+
 	return nil
 }
