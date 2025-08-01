@@ -3,6 +3,7 @@ package slicer
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"strings"
 	"testing"
@@ -11,9 +12,15 @@ import (
 // mockExecutor implements the Executor interface to capture command calls.
 type mockExecutor struct {
 	returnErr bool
+	workDir   string
+	command   string
+	args      []string
 }
 
 func (m *mockExecutor) Run(workDir, command string, args ...string) error {
+	m.workDir = workDir
+	m.command = command
+	m.args = args
 	if m.returnErr {
 		return errors.New("mock executor error")
 	}
@@ -28,7 +35,6 @@ func (e errorReader) Read(p []byte) (n int, err error) {
 }
 
 func TestParseManifest(t *testing.T) {
-	// ... (This test remains the same)
 	t.Run("successful parse", func(t *testing.T) {
 		manifestContent := `
 			file1.go
@@ -52,6 +58,33 @@ func TestParseManifest(t *testing.T) {
 			t.Error("ParseManifest() with a failing reader should have returned an error, but did not")
 		}
 	})
+}
+
+// TestSliceConstructsCorrectFilterArgument verifies that the Slice function calls
+// the executor with the correct rsync filter argument.
+func TestSliceConstructsCorrectFilterArgument(t *testing.T) {
+	sourceDir := "/source"
+	outputDir := "/output"
+	manifestPath := "/manifest.txt"
+	mockExec := &mockExecutor{}
+
+	err := Slice(sourceDir, outputDir, manifestPath, mockExec)
+	if err != nil {
+		t.Fatalf("Slice() returned an unexpected error: %v", err)
+	}
+
+	expectedFilterArg := fmt.Sprintf("merge %s", manifestPath)
+	found := false
+	for _, arg := range mockExec.args {
+		if arg == expectedFilterArg {
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		t.Errorf("rsync arguments did not contain the correct filter rule.\nGot: %v\nWant rule: %s", mockExec.args, expectedFilterArg)
+	}
 }
 
 func TestSlice(t *testing.T) {
