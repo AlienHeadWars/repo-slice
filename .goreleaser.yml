@@ -1,0 +1,37 @@
+# .goreleaser.yml
+# https://goreleaser.com/intro/
+builds:
+  - # Each entry in 'builds' is a binary.
+    # We only have one, so we only need one entry.
+    id: "repo-slice"
+    # The path to the main package.
+    main: ./cmd/repo-slice
+    # The name of the binary.
+    binary: repo-slice
+    # A list of platforms to build for.
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+archives:
+  - # Each entry in 'archives' is an archive format to wrap the binary in.
+    id: "repo-slice"
+    # We can use Go templates to name the archive.
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    # The format of the archive.
+    format: tar.gz
+    # A list of files to include in the archive.
+    files:
+      - LICENSE
+      - README.md
+checksum:
+  # This section configures the checksum generation.
+  # A checksum file is a good practice for allowing users to verify their downloads.
+  name_template: "{{ .ProjectName }}_{{ .Version }}_checksums.txt"
+release:
+  # This section configures the GitHub Release itself.
+  # 'prerelease: auto' will mark the release as a pre-release if the tag is a pre-release (e.g., v1.0.0-beta).
+  prerelease: auto
