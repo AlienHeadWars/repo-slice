@@ -117,12 +117,12 @@ runs:
       shell: bash
       run: |
         echo "--- Verifying Directory Contents ---"
-        echo "Root directory listing:"
-        ls -l
+        echo "Root directory listing (including hidden files):"
+        ls -la
         
         echo "---"
-        echo "Output directory listing:"
-        ls -l "${{ inputs.output }}"
+        echo "Output directory listing (including hidden files):"
+        ls -la "${{ inputs.output }}"
         echo "------------------------------------"
 
         # Change into the output directory, which is now its own git repository.
