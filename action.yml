@@ -16,7 +16,8 @@ inputs:
     default: '.'
   output:
     description: 'The destination directory where the filtered copy will be created.'
-    required: true
+    required: false
+    default: 'sliced-repo'
   extension-map:
     description: 'A comma-separated list of `old:new` extension pairs to remap (e.g., `tsx:ts,mdx:md`).'
     required: false
