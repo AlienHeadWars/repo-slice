@@ -5,8 +5,12 @@ description: 'Slices a repository by creating a filtered copy based on a manifes
 
 inputs:
   manifest:
-    description: 'Path to the "allow-list" file containing paths to include (one per line).'
-    required: true
+    description: 'The manifest content, provided as an inline string.'
+    required: false
+  manifestFile:
+    description: 'Path to the manifest file containing filter rules.'
+    required: false
+    default: '.slice.txt'
   source:
     description: 'The source directory to read from.'
     required: false
@@ -14,15 +18,26 @@ inputs:
   output:
     description: 'The destination directory where the filtered copy will be created.'
     required: true
+  extension-map:
+    description: 'A comma-separated list of `old:new` extension pairs to remap (e.g., `tsx:ts,mdx:md`).'
+    required: false
+
+outputs:
+  slice-path:
+    description: "The path to the generated slice directory."
+    value: ${{ steps.slice.outputs.path }}
 
 runs:
   using: "composite"
   steps:
     - name: Run repo-slice
+      id: slice
       shell: bash
       run: |
-        echo "--- Placeholder Action ---"
-        echo "Manifest: ${{ inputs.manifest }}"
-        echo "Source: ${{ inputs.source }}"
-        echo "Output: ${{ inputs.output }}"
-        echo "TODO: This step will be replaced with the logic to run the compiled Go binary."
+        # Step 1: Validate that 'manifest' and 'manifestFile' are not both used.
+        # Step 2: Download the repo-slice binary for the runner's OS/ARCH from the latest release.
+        # Step 3: Make the downloaded binary executable.
+        # Step 4: Handle the manifest input. If 'inputs.manifest' is set, write it to a temp file.
+        # Step 5: Execute the repo-slice binary with the correct arguments.
+        # Step 6: Set the output path.
+        echo "path=${{ inputs.output }}" >> $GITHUB_OUTPUT
