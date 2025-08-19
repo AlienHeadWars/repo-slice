@@ -1,5 +1,7 @@
 # .goreleaser.yml
 # https://goreleaser.com/intro/
+version: 2 # Explicitly set the config version to 2.
+
 builds:
   - # Each entry in 'builds' is a binary.
     # We only have one, so we only need one entry.
@@ -21,8 +23,9 @@ archives:
     id: "repo-slice"
     # We can use Go templates to name the archive.
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
-    # The format of the archive.
-    format: tar.gz
+    # Use the modern 'formats' key instead of the deprecated 'format'.
+    formats:
+      - tar.gz
     # A list of files to include in the archive.
     files:
       - LICENSE
