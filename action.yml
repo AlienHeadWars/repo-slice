@@ -46,7 +46,7 @@ runs:
       env:
         GH_TOKEN: ${{ github.token }}
       run: |
-        VERSION="v0.0.14" # Hardcoded version for stability
+        VERSION="v0.0.15" # Hardcoded version for stability
         echo "Downloading repo-slice binary for version $VERSION..."
         
         # Determine the correct asset name based on the runner's OS and architecture
@@ -67,7 +67,8 @@ runs:
         ASSET_NAME="repo-slice_${VERSION#v}_${OS_ARCH}.tar.gz"
         
         echo "Downloading asset: $ASSET_NAME"
-        gh release download "$VERSION" --pattern "$ASSET_NAME" --repo "$GITHUB_REPOSITORY"
+        # Explicitly specify the action's own repository
+        gh release download "$VERSION" --pattern "$ASSET_NAME" --repo "AlienHeadWars/repo-slice"
         
         tar -xzf "$ASSET_NAME"
         chmod +x ./repo-slice
@@ -124,7 +125,7 @@ runs:
 
     - name: Push to branch
       if: "inputs.push-branch-name != ''"
-      uses: stefanzweifel/git-auto-commit-action@778341af668090896ca464160c2def5d1d1a3eb0 # Pinned to v6.0.1
+      uses: stefanzweifel/git-auto-commit-action@778341af6680908B96ca464160c2def5d1d1a3eb0 # Pinned to v6.0.1
       with:
         repository: ${{ inputs.output }}
         commit_message: ${{ inputs.commit-message }}
