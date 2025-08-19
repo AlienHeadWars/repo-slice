@@ -85,13 +85,21 @@ runs:
         # Step 6: Set the output path.
         echo "path=${{ inputs.output }}" >> $GITHUB_OUTPUT
 
+    - name: Prepare repository for push
+      if: "inputs.push-branch-name != ''"
+      shell: bash
+      run: |
+        # Initialize a new git repository in the output directory
+        # and copy the parent's git configuration to retain the remote.
+        cd "${{ inputs.output }}"
+        git init
+        cp -r ../.git .
+
     - name: Push to branch
       if: "inputs.push-branch-name != ''"
       uses: stefanzweifel/git-auto-commit-action@778341af668090896ca464160c2def5d1d1a3eb0 # Pinned to v6.0.1
       with:
+        repository: ${{ inputs.output }}
         commit_message: ${{ inputs.commit-message }}
         branch: ${{ inputs.push-branch-name }}
-        # The file_pattern is now simpler as the action runs from the output directory
-        file_pattern: .
         push_options: '--force'
-      working-directory: ${{ steps.slice.outputs.path }}
