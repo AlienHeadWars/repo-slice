@@ -14,6 +14,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.5'
+
+      - name: Build repo-slice binary
+        run: go build -o ./repo-slice-test ./cmd/repo-slice
+
       - name: Create test manifest
         run: |
           echo "+ ." > test-manifest.txt
@@ -25,6 +33,7 @@ jobs:
         with:
           manifestFile: 'test-manifest.txt'
           output: 'test-output'
+          local-binary-path: ./repo-slice-test
 
       - name: Verify slice contents
         run: |
@@ -42,6 +51,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.5'
+
+      - name: Build repo-slice binary
+        run: go build -o ./repo-slice-test ./cmd/repo-slice
+
       - name: Run repo-slice action
         id: slice
         uses: ./ # Uses the action in the current repository
@@ -50,6 +67,7 @@ jobs:
             + .
             - go.mod
           output: 'test-output'
+          local-binary-path: ./repo-slice-test
 
       - name: Verify slice contents
         run: |
@@ -67,7 +85,6 @@ jobs:
 
       - name: Run repo-slice action with both inputs
         # This step is expected to fail.
-        # `continue-on-error: true` ensures the workflow doesn't fail the whole PR check.
         id: slice
         uses: ./
         with:
