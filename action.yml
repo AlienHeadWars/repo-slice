@@ -45,19 +45,15 @@ runs:
 
         # Step 2: Download the repo-slice binary for the runner's OS/ARCH from the latest release.
         echo "Downloading repo-slice binary..."
-        # Determine OS and architecture
         OS=$(echo ${{ runner.os }} | tr '[:upper:]' '[:lower:]')
         ARCH=$(echo ${{ runner.arch }} | tr '[:upper:]' '[:lower:]')
-
-        # Construct the asset pattern to download
         ASSET_PATTERN="repo-slice_*_${OS}_${ARCH}.tar.gz"
-
         gh release download --latest --pattern "$ASSET_PATTERN" --repo "$GITHUB_REPOSITORY"
-        
-        # Unpack the downloaded archive
         tar -xzf "$ASSET_PATTERN"
 
         # Step 3: Make the downloaded binary executable.
+        chmod +x ./repo-slice
+
         # Step 4: Handle the manifest input. If 'inputs.manifest' is set, write it to a temp file.
         # Step 5: Execute the repo-slice binary with the correct arguments.
         # Step 6: Set the output path.
