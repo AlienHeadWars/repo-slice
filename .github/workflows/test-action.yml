@@ -1,0 +1,83 @@
+# .github/workflows/test-action.yml
+name: Test Action
+
+on:
+  pull_request:
+    branches:
+      - 'main'
+
+jobs:
+  test_with_manifest_file:
+    name: "Test with manifestFile"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create test manifest
+        run: |
+          echo "+ ." > test-manifest.txt
+          echo "- *.go" >> test-manifest.txt
+
+      - name: Run repo-slice action
+        id: slice
+        uses: ./ # Uses the action in the current repository
+        with:
+          manifestFile: 'test-manifest.txt'
+          output: 'test-output'
+
+      - name: Verify slice contents
+        run: |
+          echo "Verifying contents of ${{ steps.slice.outputs.slice-path }}..."
+          ls -R ${{ steps.slice.outputs.slice-path }}
+          # Check that a file that should be present exists
+          test -f "${{ steps.slice.outputs.slice-path }}/README.md"
+          # Check that a file that should have been excluded does not exist
+          ! test -f "${{ steps.slice.outputs.slice-path }}/go.mod"
+
+  test_with_inline_manifest:
+    name: "Test with inline manifest"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run repo-slice action
+        id: slice
+        uses: ./ # Uses the action in the current repository
+        with:
+          manifest: |
+            + .
+            - *.go
+          output: 'test-output'
+
+      - name: Verify slice contents
+        run: |
+          echo "Verifying contents of ${{ steps.slice.outputs.slice-path }}..."
+          ls -R ${{ steps.slice.outputs.slice-path }}
+          test -f "${{ steps.slice.outputs.slice-path }}/README.md"
+          ! test -f "${{ steps.slice.outputs.slice-path }}/go.mod"
+
+  test_for_failure:
+    name: "Test for input validation failure"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run repo-slice action with both inputs
+        # This step is expected to fail.
+        # `continue-on-error: true` ensures the workflow doesn't fail the whole PR check.
+        id: slice
+        uses: ./
+        with:
+          manifest: '+ .'
+          manifestFile: 'manifest.txt'
+          output: 'test-output'
+        continue-on-error: true
+
+      - name: Check failure status
+        if: steps.slice.outcome != 'failure'
+        run: |
+          echo "Error: The action should have failed but it succeeded."
+          exit 1
