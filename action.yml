@@ -46,11 +46,12 @@ runs:
       env:
         GH_TOKEN: ${{ github.token }}
       run: |
-        echo "Downloading repo-slice binary for version ${{ github.action_ref }}..."
+        VERSION="v0.0.11" # Hardcoded version for stability
+        echo "Downloading repo-slice binary for version $VERSION..."
         OS=$(echo ${{ runner.os }} | tr '[:upper:]' '[:lower:]')
         ARCH=$(echo ${{ runner.arch }} | tr '[:upper:]' '[:lower:]')
         ASSET_PATTERN="repo-slice_*_${OS}_${ARCH}.tar.gz"
-        gh release download "${{ github.action_ref }}" --pattern "$ASSET_PATTERN" --repo "$GITHUB_REPOSITORY"
+        gh release download "$VERSION" --pattern "$ASSET_PATTERN" --repo "$GITHUB_REPOSITORY"
         tar -xzf "$ASSET_PATTERN"
         chmod +x ./repo-slice
 
