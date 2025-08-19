@@ -10,7 +10,6 @@ inputs:
   manifestFile:
     description: 'Path to the manifest file containing filter rules.'
     required: false
-    default: '.slice.txt'
   source:
     description: 'The source directory to read from.'
     required: false
@@ -34,7 +33,16 @@ runs:
       id: slice
       shell: bash
       run: |
-        # Step 1: Validate that 'manifest' and 'manifestFile' are not both used.
+        # Step 1: Validate that exactly one manifest input is provided.
+        if [ -n "${{ inputs.manifest }}" ] && [ -n "${{ inputs.manifestFile }}" ]; then
+          echo "Error: Both 'manifest' and 'manifestFile' inputs cannot be used simultaneously." >&2
+          exit 1
+        fi
+        if [ -z "${{ inputs.manifest }}" ] && [ -z "${{ inputs.manifestFile }}" ]; then
+          echo "Error: Exactly one of 'manifest' or 'manifestFile' must be provided." >&2
+          exit 1
+        fi
+
         # Step 2: Download the repo-slice binary for the runner's OS/ARCH from the latest release.
         # Step 3: Make the downloaded binary executable.
         # Step 4: Handle the manifest input. If 'inputs.manifest' is set, write it to a temp file.
