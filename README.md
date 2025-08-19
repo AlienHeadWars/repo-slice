@@ -91,8 +91,8 @@ For a complete guide on advanced features like inheriting rules from other files
 
 ## CLI Tool
 
-This project also provides a command-line tool for local use. For detailed installation and usage instructions, please see the [CLI README](https://www.google.com/search?q=./cmd/repo-slice/README.md).
+This project also provides a command-line tool for local use. For detailed installation and usage instructions, please see the [CLI README](/cmd/repo-slice/README.md).
 
 ## Contributing
 
-We welcome contributions\! Please see our [CONTRIBUTING.md](https://www.google.com/search?q=CONTRIBUTING.md) for detailed standards and procedures.
+We welcome contributions\! Please see our [CONTRIBUTING.md](CONTRIBUTING.md) for detailed standards and procedures.
