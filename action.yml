@@ -46,13 +46,30 @@ runs:
       env:
         GH_TOKEN: ${{ github.token }}
       run: |
-        VERSION="v0.0.11" # Hardcoded version for stability
+        VERSION="v0.0.12" # Hardcoded version for stability
         echo "Downloading repo-slice binary for version $VERSION..."
-        OS=$(echo ${{ runner.os }} | tr '[:upper:]' '[:lower:]')
-        ARCH=$(echo ${{ runner.arch }} | tr '[:upper:]' '[:lower:]')
-        ASSET_PATTERN="repo-slice_*_${OS}_${ARCH}.tar.gz"
-        gh release download "$VERSION" --pattern "$ASSET_PATTERN" --repo "$GITHUB_REPOSITORY"
-        tar -xzf "$ASSET_PATTERN"
+        
+        # Determine the correct asset name based on the runner's OS and architecture
+        OS_ARCH=""
+        case "${{ runner.os }}:${{ runner.arch }}" in
+          Linux:X64)   OS_ARCH="linux_amd64" ;;
+          Linux:ARM64) OS_ARCH="linux_arm64" ;;
+          macOS:X64)   OS_ARCH="darwin_amd64" ;;
+          macOS:ARM64) OS_ARCH="darwin_arm64" ;;
+          Windows:X64) OS_ARCH="windows_amd64" ;;
+          Windows:ARM64) OS_ARCH="windows_arm64" ;;
+          *)
+            echo "Error: Unsupported runner OS/architecture combination: ${{ runner.os }}/${{ runner.arch }}" >&2
+            exit 1
+            ;;
+        esac
+
+        ASSET_NAME="repo-slice_${VERSION#v}_${OS_ARCH}.tar.gz"
+        
+        echo "Downloading asset: $ASSET_NAME"
+        gh release download "$VERSION" --pattern "$ASSET_NAME" --repo "$GITHUB_REPOSITORY"
+        
+        tar -xzf "$ASSET_NAME"
         chmod +x ./repo-slice
 
     - name: Run repo-slice
