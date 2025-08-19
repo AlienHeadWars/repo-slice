@@ -46,7 +46,7 @@ runs:
       env:
         GH_TOKEN: ${{ github.token }}
       run: |
-        VERSION="v0.0.12" # Hardcoded version for stability
+        VERSION="v0.0.14" # Hardcoded version for stability
         echo "Downloading repo-slice binary for version $VERSION..."
         
         # Determine the correct asset name based on the runner's OS and architecture
