@@ -67,7 +67,6 @@ runs:
         ASSET_NAME="repo-slice_${VERSION#v}_${OS_ARCH}.tar.gz"
         
         echo "Downloading asset: $ASSET_NAME"
-        # Explicitly specify the action's own repository
         gh release download "$VERSION" --pattern "$ASSET_NAME" --repo "AlienHeadWars/repo-slice"
         
         tar -xzf "$ASSET_NAME"
@@ -121,7 +120,7 @@ runs:
       shell: bash
       run: |
         # Copy the parent's git configuration to retain the remote.
-        cp -r ../.git "${{ inputs.output }}"
+        cp -r ./.git "${{ inputs.output }}"
 
     - name: Push to branch
       if: "inputs.push-branch-name != ''"
