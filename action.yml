@@ -40,6 +40,9 @@ runs:
     - name: Run repo-slice
       id: slice
       shell: bash
+      # Add the GH_TOKEN to the environment for the gh CLI to use.
+      env:
+        GH_TOKEN: ${{ github.token }}
       run: |
         # Step 1: Validate that exactly one manifest input is provided.
         if [ -n "${{ inputs.manifest }}" ] && [ -n "${{ inputs.manifestFile }}" ]; then
@@ -90,10 +93,8 @@ runs:
       if: "inputs.push-branch-name != ''"
       shell: bash
       run: |
-        # Initialize a new git repository in the output directory
-        # and copy the parent's git configuration to retain the remote.
-        cd "${{ inputs.output }}"
-        cp -r ../.git .
+        # Copy the parent's git configuration to retain the remote.
+        cp -r ../.git "${{ inputs.output }}"
 
     - name: Push to branch
       if: "inputs.push-branch-name != ''"
