@@ -54,7 +54,26 @@ runs:
         # Step 3: Make the downloaded binary executable.
         chmod +x ./repo-slice
 
-        # Step 4: Handle the manifest input. If 'inputs.manifest' is set, write it to a temp file.
-        # Step 5: Execute the repo-slice binary with the correct arguments.
+        # Step 4: Handle the manifest input.
+        MANIFEST_PATH=""
+        if [ -n "${{ inputs.manifest }}" ]; then
+          # If 'manifest' is set, write it to a temp file.
+          MANIFEST_PATH=$(mktemp)
+          echo "${{ inputs.manifest }}" > "$MANIFEST_PATH"
+        else
+          # Otherwise, use the path from 'manifestFile'.
+          MANIFEST_PATH="${{ inputs.manifestFile }}"
+        fi
+
+        # Step 5: Construct and execute the repo-slice command.
+        # Build the command with optional arguments
+        CMD="./repo-slice --manifest \"$MANIFEST_PATH\" --source \"${{ inputs.source }}\" --output \"${{ inputs.output }}\""
+        if [ -n "${{ inputs.extension-map }}" ]; then
+          CMD="$CMD --extension-map \"${{ inputs.extension-map }}\""
+        fi
+
+        echo "Executing: $CMD"
+        eval "$CMD"
+
         # Step 6: Set the output path.
         echo "path=${{ inputs.output }}" >> $GITHUB_OUTPUT
