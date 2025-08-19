@@ -51,12 +51,13 @@ runs:
           exit 1
         fi
 
-        # Step 2: Download the repo-slice binary for the runner's OS/ARCH from the latest release.
-        echo "Downloading repo-slice binary..."
+        # Step 2: Download the repo-slice binary corresponding to the action's version.
+        echo "Downloading repo-slice binary for version ${{ github.action_ref }}..."
         OS=$(echo ${{ runner.os }} | tr '[:upper:]' '[:lower:]')
         ARCH=$(echo ${{ runner.arch }} | tr '[:upper:]' '[:lower:]')
         ASSET_PATTERN="repo-slice_*_${OS}_${ARCH}.tar.gz"
-        gh release download --latest --pattern "$ASSET_PATTERN" --repo "$GITHUB_REPOSITORY"
+
+        gh release download "${{ github.action_ref }}" --pattern "$ASSET_PATTERN" --repo "$GITHUB_REPOSITORY"
         tar -xzf "$ASSET_PATTERN"
 
         # Step 3: Make the downloaded binary executable.
