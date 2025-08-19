@@ -4,12 +4,6 @@
 
 Automate the creation of streamlined, context-specific branches for your AI assistants.
 
-## 🚧 Development Status
-
-**This project is currently in active development and is not yet ready for production use.**
-
-We are in the process of building out the core features as outlined in our [Project Roadmap](ROADMAP.md). We welcome feedback and contributions! If you're interested in helping, please see our [Contributing Guide](CONTRIBUTING.md).
-
 ## The Problem
 
 As a project grows, the entire codebase quickly becomes too large to use as a single context for an AI assistant like a Gemini Gem. To work effectively, these assistants, each assigned to a specific role, need a streamlined and relevant slice of the repository.
@@ -18,127 +12,87 @@ Manually creating and maintaining these separate, context-specific branches is a
 
 ## The Solution
 
-`repo-slice` is a simple, automation-focused CLI tool designed to solve this problem. It acts as the engine of a CI/CD pipeline that automatically maintains streamlined branches for your AI assistants.
+`repo-slice` is a GitHub Action that solves this problem by automating the entire workflow. It reads a manifest file, creates a clean, filtered copy of your repository, and pushes it to a dedicated branch.
 
-The workflow is straightforward:
-1.  **Define**: List the files and directories for a specific AI role in a simple `allow-list.txt` manifest.
-2.  **Slice**: In a CI/CD job, `repo-slice` reads the manifest and creates a clean, filtered copy of your repository.
-3.  **Push**: The job then pushes this filtered copy to a dedicated branch (e.g., `context/gem-ui-developer`).
-4.  **Configure**: Point your AI assistant at this branch, and it will always have the latest, relevant context without any manual updates.
+This allows you to create and automatically maintain streamlined branches for each of your AI assistants, ensuring they always have the latest, most relevant context without any manual intervention.
 
-## Core Features
+## Example Workflow
 
-* **Powered by `rsync` Filter Rules**: Instead of a simple allow-list, `repo-slice` leverages `rsync`'s powerful and well-documented filter-rule engine. This allows for simple lists as well as advanced wildcard patterns, inheritance from other rule files, and more.
-* **Automation-Focused**: Designed from the ground up to be a reliable and portable tool for any CI/CD environment like GitHub Actions or GitLab CI.
-* **Branch-Ready Output**: Produces a clean directory structure ready to be committed to a new branch, unlike tools that generate a single text file for prompting.
-* **Extension Mapping**: Optionally remap file extensions during the copy process. This is useful for improving compatibility with tools that don't recognize certain extensions, such as renaming `.tsx` files to `.ts` for better LLM interpretation.
+Here is a complete, copy-paste-ready example of a GitHub Actions workflow that runs on every push to the `main` branch. It uses `repo-slice` to generate a context for a "Documentation Writer" AI and pushes it to the `context/docs-writer` branch.
 
-## Workflow Overview
+```yaml
+# .github/workflows/update-ai-context.yml
+name: Update AI Context Branches
 
-`repo-slice` is designed to be the engine of a fully automated CI/CD pipeline. The typical workflow is as follows:
+on:
+  push:
+    branches:
+      - 'main'
 
-1.  **Define**: In your main branch, create and maintain a manifest file (e.g., `roles/ai-docs-writer.allow.txt`). This file declaratively lists every file and directory that is relevant to a specific AI role.
-2.  **Slice**: A scheduled CI/CD job checks out your repository. It then runs the `repo-slice` command, pointing to your manifest file, which creates a clean, filtered directory.
-3.  **Push**: The CI/CD job forcefully pushes the contents of this newly created directory to a dedicated context branch (e.g., `context/ai-docs-writer`), overwriting its previous contents.
-4.  **Configure**: Your AI assistant (e.g., a Gemini Gem) is configured to use this specific context branch as its knowledge source, ensuring it always has the latest, most relevant information without any manual intervention.
+jobs:
+  update-docs-writer-context:
+    runs-on: ubuntu-latest
+    permissions:
+      # Required to check out the repository and push to the new branch.
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-## Getting Started
-
-### Prerequisites
-
-To use `repo-slice`, you will need the following tools installed on your system:
-* **Go**: Version 1.24 or newer. You can find the official installation instructions at [go.dev/doc/install](https://go.dev/doc/install).
-* **`rsync`**: This tool is a required runtime dependency. You can install it using your system's package manager:
-    * **Linux (Debian/Ubuntu):** `sudo apt-get update && sudo apt-get install rsync`
-    * **macOS (Homebrew):** `brew install rsync`
-    * **Windows:** `rsync` is included with [Git for Windows](https://git-scm.com/download/win). Ensure it is available in your `PATH`.
-
-### Installation
-
-Once you have the prerequisites, you can install `repo-slice` with a single command:
-
-```bash
-go install [github.com/AlienHeadwars/repo-slice/cmd/repo-slice@latest](https://github.com/AlienHeadwars/repo-slice/cmd/repo-slice@latest)
+      - name: Create Docs Writer Slice
+        uses: AlienHeadWars/repo-slice@v0.0.10 # Use the latest version
+        with:
+          manifest: |
+            # Include all markdown files and the license.
+            + **/*.md
+            + /LICENSE
+            # Exclude everything else.
+            - *
+          output: './docs-writer-slice'
+          push-branch-name: 'context/docs-writer'
+          commit-message: 'chore: Update docs-writer AI context'
 ````
 
-This will download the source code, compile it, and place the `repo-slice` executable in your Go binary path.
+## Using the Action
 
-**Note**: For the `repo-slice` command to be available in your terminal, you must ensure your Go binary path is included in your system's `PATH` environment variable. The default path is typically `~/go/bin` on Linux and macOS, and `%USERPROFILE%\go\bin` on Windows.
+### Creating a Manifest File
 
-## Usage
+The manifest file is the heart of `repo-slice`. It's a simple text file that uses **`rsync`'s filter-rule syntax** to define which files to include or exclude.
 
-### 1\. Create a Manifest File
+**Key Rules:**
 
-The core of `repo-slice` is the manifest file. This is a text file that uses **`rsync`'s filter-rule syntax** to define which files to include or exclude. For a complete guide on the powerful features available, see the official `rsync` documentation on FILTER RULES.
+  * **Include (`+`) and Exclude (`-`)**: Prefix each line with `+` to include a file/directory or `-` to exclude it.
+  * **Order Matters**: `rsync` uses a "first match wins" logic. Place more specific rules (like excluding a single file) before more general rules (like including a whole directory).
+  * **Comments (`#`)**: Lines starting with a `#` are ignored.
+  * **Wildcards (`*`, `**`)**: Use wildcards to match patterns. A single `*` matches any character except a slash, while `**` matches everything, including slashes.
 
-**Format Rules:**
+For a complete guide on advanced features like inheriting rules from other files (`.`), see the official **[rsync documentation on FILTER RULES](https://download.samba.org/pub/rsync/rsync.1#FILTER_RULES)**.
 
-  * Each rule must be on a new line.
-  * Lines starting with `#` are treated as comments and are ignored.
-  * Use `+` to include a file or directory.
-  * Use `-` to exclude a file or directory.
-  * The first rule that matches a file is the one that takes effect.
+### Inputs
 
-**Example `allow-list.txt`:**
-
-```
-# Include the main application and the slicer utility.
-+ /cmd/repo-slice/main.go
-+ /internal/slicer/**
-
-# Exclude all test files from the slicer utility.
-- /internal/slicer/*_test.go
-
-# Also include the project's license and README.
-+ /LICENSE
-+ /README.md
-
-# Exclude everything else.
-- *
-```
-
-### 2\. Run the Command
-
-Use the `repo-slice` command, pointing to your manifest and specifying a source and output directory.
-
-```bash
-repo-slice --manifest="allow-list.txt" --source="./source-repo" --output="./sliced-repo"
-```
-
-To remap file extensions during the slice, use the `--extension-map` flag with a comma-separated list of `old:new` pairs.
-
-```bash
-repo-slice --manifest="allow-list.txt" --source="./source-repo" --output="./sliced-repo" --extension-map="tsx:ts,mdx:md"
-```
-
-## Command-Line Reference
-
-### Arguments
-
-| Flag | Description | Required | Default |
+| Input | Description | Required | Default |
 | :--- | :--- | :--- | :--- |
-| `--manifest` | Path to the "allow-list" file containing paths to include (one per line). | **Yes** | |
-| `--source` | The source directory to read from. | No | `.` |
-| `--output` | The destination directory where the filtered copy will be created. | **Yes**| |
-| `--extension-map` | A comma-separated list of `old:new` extension pairs to remap (e.g., `tsx:ts,mdx:md`). | No | |
+| `manifest` | The manifest content, provided as an inline string. | No | |
+| `manifestFile`| Path to the manifest file containing filter rules. | No | |
+| `source` | The source directory to read from. | No | `.` |
+| `output` | The destination directory where the filtered copy will be created. | No | `sliced-repo` |
+| `extension-map`| A comma-separated list of `old:new` extension pairs to remap. | No | |
+| `push-branch-name`| The name of the branch to push the sliced contents to. | No | |
+| `commit-message`| The commit message to use when pushing the sliced branch. | No | `chore: Update repository slice` |
+| `local-binary-path`| Path to a local binary. (For testing purposes). | No | |
 
-### Exit Codes
+**Note**: You must provide exactly one of `manifest` or `manifestFile`.
 
-*(This section will formally document the tool's exit codes to aid in scripting and debugging).*
+### Outputs
 
-## Quality Assurance
+| Output | Description |
+| :--- | :--- |
+| `slice-path` | The path to the generated slice directory. |
 
-This project is committed to a high standard of code quality and security. To ensure this, we have integrated the following tools into our development process:
+## CLI Tool
 
-  * **Coveralls**: For tracking test coverage on every pull request and ensuring it remains high.
-  * **SonarCloud**: For continuous static analysis to detect bugs, vulnerabilities, and code smells.
-  * **Snyk**: For scanning dependencies against a database of known open-source vulnerabilities.
-  * **Dependabot**: For automatically keeping our dependencies up-to-date.
-
-## Versioning
-
-This project follows [Semantic Versioning](https://semver.org/). We use an automated release process that creates a new version tag on every merge to the `main` branch. See our [Contributing Guide](CONTRIBUTING.md#automated-versioning) for details on how commit messages influence the version number.
+This project also provides a command-line tool for local use. For detailed installation and usage instructions, please see the [CLI README](/cmd/repo-slice/README.md).
 
 ## Contributing
 
-We welcome contributions! Please see our [CONTRIBUTING.md](CONTRIBUTING.md) for detailed standards and procedures.
+We welcome contributions\! Please see our [CONTRIBUTING.md](CONTRIBUTING.md) for detailed standards and procedures.

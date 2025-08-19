@@ -1,28 +1,114 @@
 # file: action.yml
 name: 'Repo Slice'
 author: 'AlienHeadwars'
-description: 'Slices a repository by creating a filtered copy based on a manifest file, for use in CI/CD automation.'
+description: 'Slices a repository and optionally pushes it to a new branch.'
 
 inputs:
   manifest:
-    description: 'Path to the "allow-list" file containing paths to include (one per line).'
-    required: true
+    description: 'The manifest content, provided as an inline string.'
+    required: false
+  manifestFile:
+    description: 'Path to the manifest file containing filter rules.'
+    required: false
   source:
     description: 'The source directory to read from.'
     required: false
     default: '.'
   output:
     description: 'The destination directory where the filtered copy will be created.'
-    required: true
+    required: false
+    default: 'sliced-repo'
+  extension-map:
+    description: 'A comma-separated list of `old:new` extension pairs to remap (e.g., `tsx:ts,mdx:md`).'
+    required: false
+  push-branch-name:
+    description: 'The name of the branch to push the sliced contents to. If not set, no push will be performed.'
+    required: false
+  commit-message:
+    description: 'The commit message to use when pushing the sliced branch.'
+    required: false
+    default: 'chore: Update repository slice'
+  local-binary-path:
+    description: 'Path to a local repo-slice binary. If set, the download step will be skipped. For testing purposes.'
+    required: false
+
+outputs:
+  slice-path:
+    description: "The path to the generated slice directory."
+    value: ${{ steps.slice.outputs.path }}
 
 runs:
   using: "composite"
   steps:
+    - name: Download and prepare binary
+      if: "inputs.local-binary-path == ''"
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        echo "Downloading repo-slice binary for version ${{ github.action_ref }}..."
+        OS=$(echo ${{ runner.os }} | tr '[:upper:]' '[:lower:]')
+        ARCH=$(echo ${{ runner.arch }} | tr '[:upper:]' '[:lower:]')
+        ASSET_PATTERN="repo-slice_*_${OS}_${ARCH}.tar.gz"
+        gh release download "${{ github.action_ref }}" --pattern "$ASSET_PATTERN" --repo "$GITHUB_REPOSITORY"
+        tar -xzf "$ASSET_PATTERN"
+        chmod +x ./repo-slice
+
     - name: Run repo-slice
+      id: slice
       shell: bash
       run: |
-        echo "--- Placeholder Action ---"
-        echo "Manifest: ${{ inputs.manifest }}"
-        echo "Source: ${{ inputs.source }}"
-        echo "Output: ${{ inputs.output }}"
-        echo "TODO: This step will be replaced with the logic to run the compiled Go binary."
+        # Step 1: Validate that exactly one manifest input is provided.
+        if [ -n "${{ inputs.manifest }}" ] && [ -n "${{ inputs.manifestFile }}" ]; then
+          echo "Error: Both 'manifest' and 'manifestFile' inputs cannot be used simultaneously." >&2
+          exit 1
+        fi
+        if [ -z "${{ inputs.manifest }}" ] && [ -z "${{ inputs.manifestFile }}" ]; then
+          echo "Error: Exactly one of 'manifest' or 'manifestFile' must be provided." >&2
+          exit 1
+        fi
+
+        # Determine which binary to use
+        BINARY_PATH="./repo-slice"
+        if [ -n "${{ inputs.local-binary-path }}" ]; then
+          BINARY_PATH="${{ inputs.local-binary-path }}"
+        fi
+
+        # Step 4: Handle the manifest input.
+        MANIFEST_PATH=""
+        if [ -n "${{ inputs.manifest }}" ]; then
+          # If 'manifest' is set, write it to a temp file.
+          MANIFEST_PATH=$(mktemp)
+          echo "${{ inputs.manifest }}" > "$MANIFEST_PATH"
+        else
+          # Otherwise, use the path from 'manifestFile'.
+          MANIFEST_PATH="${{ inputs.manifestFile }}"
+        fi
+
+        # Step 5: Construct and execute the repo-slice command.
+        CMD="$BINARY_PATH --manifest \"$MANIFEST_PATH\" --source \"${{ inputs.source }}\" --output \"${{ inputs.output }}\""
+        if [ -n "${{ inputs.extension-map }}" ]; then
+          CMD="$CMD --extension-map \"${{ inputs.extension-map }}\""
+        fi
+
+        echo "Executing: $CMD"
+        eval "$CMD"
+
+        # Step 6: Set the output path.
+        echo "path=${{ inputs.output }}" >> $GITHUB_OUTPUT
+
+    - name: Prepare repository for push
+      if: "inputs.push-branch-name != ''"
+      shell: bash
+      run: |
+        # Copy the parent's git configuration to retain the remote.
+        cp -r ../.git "${{ inputs.output }}"
+
+    - name: Push to branch
+      if: "inputs.push-branch-name != ''"
+      uses: stefanzweifel/git-auto-commit-action@778341af668090896ca464160c2def5d1d1a3eb0 # Pinned to v6.0.1
+      with:
+        repository: ${{ inputs.output }}
+        commit_message: ${{ inputs.commit-message }}
+        branch: ${{ inputs.push-branch-name }}
+        push_options: '--force'
