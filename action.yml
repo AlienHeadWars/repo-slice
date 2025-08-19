@@ -1,7 +1,7 @@
 # file: action.yml
 name: 'Repo Slice'
 author: 'AlienHeadwars'
-description: 'Slices a repository by creating a filtered copy based on a manifest file, for use in CI/CD automation.'
+description: 'Slices a repository and optionally pushes it to a new branch.'
 
 inputs:
   manifest:
@@ -20,6 +20,13 @@ inputs:
   extension-map:
     description: 'A comma-separated list of `old:new` extension pairs to remap (e.g., `tsx:ts,mdx:md`).'
     required: false
+  push-branch-name:
+    description: 'The name of the branch to push the sliced contents to. If not set, no push will be performed.'
+    required: false
+  commit-message:
+    description: 'The commit message to use when pushing the sliced branch.'
+    required: false
+    default: 'chore: Update repository slice'
 
 outputs:
   slice-path:
@@ -66,7 +73,6 @@ runs:
         fi
 
         # Step 5: Construct and execute the repo-slice command.
-        # Build the command with optional arguments
         CMD="./repo-slice --manifest \"$MANIFEST_PATH\" --source \"${{ inputs.source }}\" --output \"${{ inputs.output }}\""
         if [ -n "${{ inputs.extension-map }}" ]; then
           CMD="$CMD --extension-map \"${{ inputs.extension-map }}\""
@@ -77,3 +83,13 @@ runs:
 
         # Step 6: Set the output path.
         echo "path=${{ inputs.output }}" >> $GITHUB_OUTPUT
+
+    - name: Push to branch
+      if: "inputs.push-branch-name != ''"
+      uses: stefanzweifel/git-auto-commit-action@v5
+      with:
+        repository: .
+        commit_message: ${{ inputs.commit-message }}
+        branch: ${{ inputs.push-branch-name }}
+        file_pattern: ${{ inputs.output }}/**
+        push_options: '--force'
