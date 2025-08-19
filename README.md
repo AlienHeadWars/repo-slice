@@ -55,7 +55,18 @@ jobs:
 
 ## Using the Action
 
-To use `repo-slice` in your own workflows, add a step like the one above.
+### Creating a Manifest File
+
+The manifest file is the heart of `repo-slice`. It's a simple text file that uses **`rsync`'s filter-rule syntax** to define which files to include or exclude.
+
+**Key Rules:**
+
+  * **Include (`+`) and Exclude (`-`)**: Prefix each line with `+` to include a file/directory or `-` to exclude it.
+  * **Order Matters**: `rsync` uses a "first match wins" logic. Place more specific rules (like excluding a single file) before more general rules (like including a whole directory).
+  * **Comments (`#`)**: Lines starting with a `#` are ignored.
+  * **Wildcards (`*`, `**`)**: Use wildcards to match patterns. A single `*` matches any character except a slash, while `**` matches everything, including slashes.
+
+For a complete guide on advanced features like inheriting rules from other files (`.`), see the official **[rsync documentation on FILTER RULES](https://download.samba.org/pub/rsync/rsync.1#FILTER_RULES)**.
 
 ### Inputs
 
