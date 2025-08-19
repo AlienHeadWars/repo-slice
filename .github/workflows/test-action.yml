@@ -17,7 +17,7 @@ jobs:
       - name: Create test manifest
         run: |
           echo "+ ." > test-manifest.txt
-          echo "- *.go" >> test-manifest.txt
+          echo "- go.mod" >> test-manifest.txt
 
       - name: Run repo-slice action
         id: slice
@@ -48,7 +48,7 @@ jobs:
         with:
           manifest: |
             + .
-            - *.go
+            - go.mod
           output: 'test-output'
 
       - name: Verify slice contents
