@@ -12,6 +12,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write # This permission is required to push a new tag to the repository
+    outputs:
+      tag: ${{ steps.create_tag.outputs.new_tag }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -25,3 +27,29 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           WITH_V: true
           DEFAULT_BUMP: patch
+
+  goreleaser:
+    name: "Run GoReleaser"
+    runs-on: ubuntu-latest
+    needs: tag
+    permissions:
+      contents: write # Required to create the GitHub Release.
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # This is required so GoReleaser can generate a changelog.
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.5'
+
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@e435ccd777264be153ace6237001ef4d979d3a7a # Pinned to v6.0.0
+        with:
+          version: latest
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
