@@ -118,11 +118,11 @@ runs:
       run: |
         echo "--- Verifying Directory Contents ---"
         echo "Root directory listing:"
-        ls -R
+        ls -l
         
         echo "---"
         echo "Output directory listing:"
-        ls -R "${{ inputs.output }}"
+        ls -l "${{ inputs.output }}"
         echo "------------------------------------"
 
         # Change into the output directory, which is now its own git repository.
