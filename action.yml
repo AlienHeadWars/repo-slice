@@ -28,6 +28,9 @@ inputs:
     description: 'The commit message to use when pushing the sliced branch.'
     required: false
     default: 'chore: Update repository slice'
+  local-binary-path:
+    description: 'Path to a local repo-slice binary. If set, the download step will be skipped. For testing purposes.'
+    required: false
 
 outputs:
   slice-path:
@@ -37,12 +40,23 @@ outputs:
 runs:
   using: "composite"
   steps:
+    - name: Download and prepare binary
+      if: "inputs.local-binary-path == ''"
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        echo "Downloading repo-slice binary for version ${{ github.action_ref }}..."
+        OS=$(echo ${{ runner.os }} | tr '[:upper:]' '[:lower:]')
+        ARCH=$(echo ${{ runner.arch }} | tr '[:upper:]' '[:lower:]')
+        ASSET_PATTERN="repo-slice_*_${OS}_${ARCH}.tar.gz"
+        gh release download "${{ github.action_ref }}" --pattern "$ASSET_PATTERN" --repo "$GITHUB_REPOSITORY"
+        tar -xzf "$ASSET_PATTERN"
+        chmod +x ./repo-slice
+
     - name: Run repo-slice
       id: slice
       shell: bash
-      # Add the GH_TOKEN to the environment for the gh CLI to use.
-      env:
-        GH_TOKEN: ${{ github.token }}
       run: |
         # Step 1: Validate that exactly one manifest input is provided.
         if [ -n "${{ inputs.manifest }}" ] && [ -n "${{ inputs.manifestFile }}" ]; then
@@ -54,17 +68,11 @@ runs:
           exit 1
         fi
 
-        # Step 2: Download the repo-slice binary corresponding to the action's version.
-        echo "Downloading repo-slice binary for version ${{ github.action_ref }}..."
-        OS=$(echo ${{ runner.os }} | tr '[:upper:]' '[:lower:]')
-        ARCH=$(echo ${{ runner.arch }} | tr '[:upper:]' '[:lower:]')
-        ASSET_PATTERN="repo-slice_*_${OS}_${ARCH}.tar.gz"
-
-        gh release download "${{ github.action_ref }}" --pattern "$ASSET_PATTERN" --repo "$GITHUB_REPOSITORY"
-        tar -xzf "$ASSET_PATTERN"
-
-        # Step 3: Make the downloaded binary executable.
-        chmod +x ./repo-slice
+        # Determine which binary to use
+        BINARY_PATH="./repo-slice"
+        if [ -n "${{ inputs.local-binary-path }}" ]; then
+          BINARY_PATH="${{ inputs.local-binary-path }}"
+        fi
 
         # Step 4: Handle the manifest input.
         MANIFEST_PATH=""
@@ -78,7 +86,7 @@ runs:
         fi
 
         # Step 5: Construct and execute the repo-slice command.
-        CMD="./repo-slice --manifest \"$MANIFEST_PATH\" --source \"${{ inputs.source }}\" --output \"${{ inputs.output }}\""
+        CMD="$BINARY_PATH --manifest \"$MANIFEST_PATH\" --source \"${{ inputs.source }}\" --output \"${{ inputs.output }}\""
         if [ -n "${{ inputs.extension-map }}" ]; then
           CMD="$CMD --extension-map \"${{ inputs.extension-map }}\""
         fi
