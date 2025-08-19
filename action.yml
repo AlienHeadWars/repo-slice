@@ -75,7 +75,6 @@ runs:
       id: slice
       shell: bash
       run: |
-        # ... (validation and execution logic remains the same) ...
         # Step 1: Validate that exactly one manifest input is provided.
         if [ -n "${{ inputs.manifest }}" ] && [ -n "${{ inputs.manifestFile }}" ]; then
           echo "Error: Both 'manifest' and 'manifestFile' inputs cannot be used simultaneously." >&2
@@ -120,8 +119,8 @@ runs:
         # Change into the output directory, which is now its own git repository.
         cd "${{ inputs.output }}"
         
-        # Copy the parent's git configuration to retain the remote.
-        cp -r ../.git .
+        # Use rsync to copy the parent's git configuration to handle permissions correctly.
+        rsync -a ../.git/ ./.git/
         
         # Configure the git user.
         git config user.name "github-actions[bot]"
