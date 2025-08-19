@@ -92,7 +92,6 @@ runs:
         # Initialize a new git repository in the output directory
         # and copy the parent's git configuration to retain the remote.
         cd "${{ inputs.output }}"
-        git init
         cp -r ../.git .
 
     - name: Push to branch
