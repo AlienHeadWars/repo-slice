@@ -119,8 +119,8 @@ runs:
       if: "inputs.push-branch-name != ''"
       shell: bash
       run: |
-        # Copy the parent's git configuration to retain the remote.
-        cp -r ./.git "${{ inputs.output }}"
+        # Use rsync to copy the .git directory to handle permissions correctly.
+        rsync -a ./.git/ "${{ inputs.output }}/.git/"
 
     - name: Push to branch
       if: "inputs.push-branch-name != ''"
