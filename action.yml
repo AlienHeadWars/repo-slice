@@ -46,10 +46,9 @@ runs:
       env:
         GH_TOKEN: ${{ github.token }}
       run: |
-        VERSION="v0.0.15" # Hardcoded version for stability
+        VERSION="v0.0.17" # Hardcoded version for stability
         echo "Downloading repo-slice binary for version $VERSION..."
         
-        # Determine the correct asset name based on the runner's OS and architecture
         OS_ARCH=""
         case "${{ runner.os }}:${{ runner.arch }}" in
           Linux:X64)   OS_ARCH="linux_amd64" ;;
@@ -76,6 +75,7 @@ runs:
       id: slice
       shell: bash
       run: |
+        # ... (validation and execution logic remains the same) ...
         # Step 1: Validate that exactly one manifest input is provided.
         if [ -n "${{ inputs.manifest }}" ] && [ -n "${{ inputs.manifestFile }}" ]; then
           echo "Error: Both 'manifest' and 'manifestFile' inputs cannot be used simultaneously." >&2
@@ -111,22 +111,23 @@ runs:
 
         echo "Executing: $CMD"
         eval "$CMD"
-
-        # Step 6: Set the output path.
         echo "path=${{ inputs.output }}" >> $GITHUB_OUTPUT
-
-    - name: Prepare repository for push
-      if: "inputs.push-branch-name != ''"
-      shell: bash
-      run: |
-        # Use rsync to copy the .git directory to handle permissions correctly.
-        rsync -a ./.git/ "${{ inputs.output }}/.git/"
 
     - name: Push to branch
       if: "inputs.push-branch-name != ''"
-      uses: stefanzweifel/git-auto-commit-action@778341af668090896ca464160c2def5d1d1a3eb0 # Pinned to v6.0.1
-      with:
-        repository: ${{ inputs.output }}
-        commit_message: ${{ inputs.commit-message }}
-        branch: ${{ inputs.push-branch-name }}
-        push_options: '--force'
+      shell: bash
+      run: |
+        # Change into the output directory, which is now its own git repository.
+        cd "${{ inputs.output }}"
+        
+        # Copy the parent's git configuration to retain the remote.
+        cp -r ../.git .
+        
+        # Configure the git user.
+        git config user.name "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        
+        # Add all files, commit, and force-push.
+        git add .
+        git commit -m "${{ inputs.commit-message }}"
+        git push --force origin HEAD:${{ inputs.push-branch-name }}
