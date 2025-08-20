@@ -66,7 +66,7 @@ runs:
         ASSET_NAME="repo-slice_${VERSION#v}_${OS_ARCH}.tar.gz"
         
         echo "Downloading asset: $ASSET_NAME"
-        gh release download "$VERSION" --pattern "$ASSET_NAME" --repo "AlienHeadWars/repo-slice"
+        gh release download "$VERSION" --pattern "$ASSET_NAME" --repo "AlienHeadWars/repo-slice" --clobber
         
         tar -xzf "$ASSET_NAME"
         chmod +x ./repo-slice
@@ -116,15 +116,6 @@ runs:
       if: "inputs.push-branch-name != ''"
       shell: bash
       run: |
-        echo "--- Verifying Directory Contents ---"
-        echo "Root directory listing:"
-        ls -l
-        
-        echo "---"
-        echo "Output directory listing:"
-        ls -l "${{ inputs.output }}"
-        echo "------------------------------------"
-
         # Change into the output directory, which is now its own git repository.
         cd "${{ inputs.output }}"
         
