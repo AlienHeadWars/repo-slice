@@ -18,7 +18,7 @@ This allows you to create and automatically maintain streamlined branches for ea
 
 ## Example Workflow
 
-Here is a complete, copy-paste-ready example of a GitHub Actions workflow that runs on every push to the `main` branch. It uses `repo-slice` to generate a context for a "Documentation Writer" AI and pushes it to the `context/docs-writer` branch.
+Here is a complete, copy-paste-ready example of a GitHub Actions workflow. It generates a context for a "Go Backend Developer" AI, including only the main application, the slicer utility, and the project's license.
 
 ```yaml
 # .github/workflows/update-ai-context.yml
@@ -30,28 +30,30 @@ on:
       - 'main'
 
 jobs:
-  update-docs-writer-context:
+  update-backend-developer-context:
     runs-on: ubuntu-latest
     permissions:
-      # Required to check out the repository and push to the new branch.
       contents: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Create Docs Writer Slice
-        uses: AlienHeadWars/repo-slice@v0.0.10 # Use the latest version
+      - name: Create Go Backend Slice
+        uses: AlienHeadWars/repo-slice@v0.0.21 # Use the latest version
         with:
           manifest: |
-            # Include all markdown files and the license.
-            + **/*.md
+            # Include all directories to allow for traversal.
+            + **/
+            # Include the main application and the slicer utility.
+            + /cmd/repo-slice/**
+            + /internal/slicer/**
             + /LICENSE
             # Exclude everything else.
             - *
-          output: './docs-writer-slice'
-          push-branch-name: 'context/docs-writer'
-          commit-message: 'chore: Update docs-writer AI context'
-````
+          output: './backend-dev-slice'
+          push-branch-name: 'context/backend-dev'
+          commit-message: 'chore: Update backend-dev AI context'
+```
 
 ## Using the Action
 
@@ -63,8 +65,11 @@ The manifest file is the heart of `repo-slice`. It's a simple text file that use
 
   * **Include (`+`) and Exclude (`-`)**: Prefix each line with `+` to include a file/directory or `-` to exclude it.
   * **Order Matters**: `rsync` uses a "first match wins" logic. Place more specific rules (like excluding a single file) before more general rules (like including a whole directory).
-  * **Comments (`#`)**: Lines starting with a `#` are ignored.
-  * **Wildcards (`*`, `**`)**: Use wildcards to match patterns. A single `*` matches any character except a slash, while `**` matches everything, including slashes.
+  * **Directory Traversal**: To include a file in a subdirectory, you must also include its parent directories. The easiest way to do this is to include all directories with a `+ **/` rule at the start of your manifest.
+  * **Exclude by Default**: To ensure your slice *only* contains the files you've explicitly included, you must end your manifest with a `- *` rule. This tells `rsync` to exclude everything else.
+
+> **Warning**
+> A common mistake is to forget to include the parent directories of a nested file. Without a rule like `+ **/`, `rsync` will exclude the parent directory and will never find the nested file you want to include.
 
 For a complete guide on advanced features like inheriting rules from other files (`.`), see the official **[rsync documentation on FILTER RULES](https://download.samba.org/pub/rsync/rsync.1#FILTER_RULES)**.
 
