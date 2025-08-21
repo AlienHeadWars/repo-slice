@@ -76,6 +76,40 @@ jobs:
           test -f "${{ steps.slice.outputs.slice-path }}/README.md"
           ! test -f "${{ steps.slice.outputs.slice-path }}/go.mod"
 
+  test_with_temp_directory:
+    name: "Test with temporary output directory"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.5'
+
+      - name: Build repo-slice binary
+        run: go build -o ./repo-slice-test ./cmd/repo-slice
+
+      - name: Create test manifest
+        run: |
+          echo "+ ." > test-manifest.txt
+          echo "- go.mod" >> test-manifest.txt
+
+      - name: Run repo-slice action without output
+        id: slice
+        uses: ./
+        with:
+          manifestFile: 'test-manifest.txt'
+          local-binary-path: ./repo-slice-test
+
+      - name: Verify slice contents in temp dir
+        run: |
+          echo "Verifying contents of ${{ steps.slice.outputs.slice-path }}..."
+          ls -R ${{ steps.slice.outputs.slice-path }}
+          test -f "${{ steps.slice.outputs.slice-path }}/README.md"
+          ! test -f "${{ steps.slice.outputs.slice-path }}/go.mod"
+
   test_for_failure:
     name: "Test for input validation failure"
     runs-on: ubuntu-latest
