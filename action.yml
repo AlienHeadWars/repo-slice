@@ -39,16 +39,16 @@ outputs:
 runs:
   using: "composite"
   steps:
-    - name: Create temporary directory for binary
-      id: tempdir
+    - name: Prepare binary path
+      id: binary_path
       shell: bash
       run: |
         if [ -n "${{ inputs.local-binary-path }}" ]; then
           echo "path=${{ inputs.local-binary-path }}" >> $GITHUB_OUTPUT
         else
-          # Create a temporary directory for the binary
           TEMP_DIR=$(mktemp -d)
           echo "path=$TEMP_DIR/repo-slice" >> $GITHUB_OUTPUT
+          echo "dir=$TEMP_DIR" >> $GITHUB_OUTPUT
         fi
 
     - name: Download and prepare binary
@@ -56,6 +56,7 @@ runs:
       shell: bash
       env:
         GH_TOKEN: ${{ github.token }}
+        TEMP_DIR: ${{ steps.binary_path.outputs.dir }}
       run: |
         VERSION="v0.0.21" # Hardcoded version for stability
         echo "Downloading repo-slice binary for version $VERSION..."
@@ -77,11 +78,11 @@ runs:
         ASSET_NAME="repo-slice_${VERSION#v}_${OS_ARCH}.tar.gz"
         
         # Download to the temporary directory
-        gh release download "$VERSION" --pattern "$ASSET_NAME" --repo "AlienHeadWars/repo-slice" --clobber -D "${{ steps.tempdir.outputs.path%/* }}"
-        
-        # Unpack in the temporary directory
-        tar -xzf "${{ steps.tempdir.outputs.path%/* }}/$ASSET_NAME" -C "${{ steps.tempdir.outputs.path%/* }}"
-        chmod +x "${{ steps.tempdir.outputs.path }}"
+        gh release download "$VERSION" --pattern "$ASSET_NAME" --repo "AlienHeadWars/repo-slice" --clobber -D "$TEMP_DIR"
+              
+        # Unpack in the temporary directory  
+        tar -xzf "$TEMP_DIR/$ASSET_NAME" -C "$TEMP_DIR"
+        chmod +x "$TEMP_DIR/repo-slice"
 
     - name: Run repo-slice
       id: slice
@@ -97,19 +98,19 @@ runs:
           exit 1
         fi
 
-        # Determine the output path. Use a temporary directory if not specified.
         OUTPUT_PATH="${{ inputs.output }}"
         if [ -z "$OUTPUT_PATH" ]; then
           OUTPUT_PATH=$(mktemp -d)
         fi
 
         # Determine which binary to use
-        BINARY_PATH="${{ steps.tempdir.outputs.path }}"
+        BINARY_PATH="${{ steps.binary_path.outputs.path }}"
         if [ -n "${{ inputs.local-binary-path }}" ]; then
           BINARY_PATH="${{ inputs.local-binary-path }}"
         fi
 
         # Handle the manifest input.
+
         MANIFEST_PATH=""
         if [ -n "${{ inputs.manifest }}" ]; then
           MANIFEST_PATH=$(mktemp)
@@ -118,8 +119,8 @@ runs:
           MANIFEST_PATH="${{ inputs.manifestFile }}"
         fi
 
+       # Construct and execute the repo-slice command.
 
-        # Construct and execute the repo-slice command.
         CMD="$BINARY_PATH --manifest \"$MANIFEST_PATH\" --source \"${{ inputs.source }}\" --output \"$OUTPUT_PATH\""
         if [ -n "${{ inputs.extension-map }}" ]; then
           CMD="$CMD --extension-map \"${{ inputs.extension-map }}\""
