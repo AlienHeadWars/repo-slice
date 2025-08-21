@@ -7,7 +7,7 @@ inputs:
   manifest:
     description: 'The manifest content, provided as an inline string.'
     required: false
-  manifestFile:
+  manifest-file:
     description: 'Path to the manifest file containing filter rules.'
     required: false
   source:
@@ -18,7 +18,7 @@ inputs:
     description: 'The destination directory. If not set, a temporary directory will be created.'
     required: false
   extension-map:
-    description: 'A comma-separated list of `old:new` extension pairs to remap (e.g., `tsx:ts,mdx:md`).'
+    description: 'A multi-line string of `old:new` extension pairs to remap.'
     required: false
   push-branch-name:
     description: 'The name of the branch to push the sliced contents to. If not set, no push will be performed.'
@@ -89,12 +89,12 @@ runs:
       shell: bash
       run: |
         # Validate that exactly one manifest input is provided.
-        if [ -n "${{ inputs.manifest }}" ] && [ -n "${{ inputs.manifestFile }}" ]; then
-          echo "Error: Both 'manifest' and 'manifestFile' inputs cannot be used simultaneously." >&2
+        if [ -n "${{ inputs.manifest }}" ] && [ -n "${{ inputs.manifest-file }}" ]; then
+          echo "Error: Both 'manifest' and 'manifest-file' inputs cannot be used simultaneously." >&2
           exit 1
         fi
-        if [ -z "${{ inputs.manifest }}" ] && [ -z "${{ inputs.manifestFile }}" ]; then
-          echo "Error: Exactly one of 'manifest' or 'manifestFile' must be provided." >&2
+        if [ -z "${{ inputs.manifest }}" ] && [ -z "${{ inputs.manifest-file }}" ]; then
+          echo "Error: Exactly one of 'manifest' or 'manifest-file' must be provided." >&2
           exit 1
         fi
 
@@ -116,14 +116,23 @@ runs:
           MANIFEST_PATH=$(mktemp)
           echo "${{ inputs.manifest }}" > "$MANIFEST_PATH"
         else
-          MANIFEST_PATH="${{ inputs.manifestFile }}"
+          MANIFEST_PATH="${{ inputs.manifest-file }}"
         fi
 
-        # Construct and execute the repo-slice command.
-        CMD="$BINARY_PATH --manifest \"$MANIFEST_PATH\" --source \"${{ inputs.source }}\" --output \"$OUTPUT_PATH\""
+        # Convert multi-line extension-map to comma-separated string
+        EXTENSION_MAP_ARG=""
         if [ -n "${{ inputs.extension-map }}" ]; then
-          CMD="$CMD --extension-map \"${{ inputs.extension-map }}\""
+          # Use awk to filter out empty lines and then join with a comma.
+          # This is more robust than the previous methods.
+          COMMA_SEPARATED_MAP=$(echo "${{ inputs.extension-map }}" | awk 'NF' | paste -sd, -)
+          EXTENSION_MAP_ARG="--extension-map \"$COMMA_SEPARATED_MAP\""
         fi
+
+        CMD="$BINARY_PATH --manifest \"$MANIFEST_PATH\" --source \"${{ inputs.source }}\" --output \"$OUTPUT_PATH\" $EXTENSION_MAP_ARG"
+        
+        echo "--- Debug Info ---"
+        echo "Final command: $CMD"
+        echo "------------------"
 
         echo "Executing: $CMD"
         eval "$CMD"
