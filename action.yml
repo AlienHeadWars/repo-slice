@@ -122,17 +122,18 @@ runs:
         # Convert multi-line extension-map to comma-separated string
         EXTENSION_MAP_ARG=""
         if [ -n "${{ inputs.extension-map }}" ]; then
-          # Read the multi-line string into an array, filtering out empty lines
-          mapfile -t lines < <(echo "${{ inputs.extension-map }}")
-          
-          # Join the array with commas
-          COMMA_SEPARATED_MAP=$(IFS=,; echo "${lines[*]}")
-          
+          # Use awk to filter out empty lines and then join with a comma.
+          # This is more robust than the previous methods.
+          COMMA_SEPARATED_MAP=$(echo "${{ inputs.extension-map }}" | awk 'NF' | paste -sd, -)
           EXTENSION_MAP_ARG="--extension-map \"$COMMA_SEPARATED_MAP\""
         fi
 
         CMD="$BINARY_PATH --manifest \"$MANIFEST_PATH\" --source \"${{ inputs.source }}\" --output \"$OUTPUT_PATH\" $EXTENSION_MAP_ARG"
         
+        echo "--- Debug Info ---"
+        echo "Final command: $CMD"
+        echo "------------------"
+
         echo "Executing: $CMD"
         eval "$CMD"
         echo "path=$OUTPUT_PATH" >> $GITHUB_OUTPUT
