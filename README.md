@@ -50,7 +50,6 @@ jobs:
             + /LICENSE
             # Exclude everything else.
             - *
-          output: './backend-dev-slice'
           push-branch-name: 'context/backend-dev'
           commit-message: 'chore: Update backend-dev AI context'
 ```
@@ -80,7 +79,7 @@ For a complete guide on advanced features like inheriting rules from other files
 | `manifest` | The manifest content, provided as an inline string. | No | |
 | `manifestFile`| Path to the manifest file containing filter rules. | No | |
 | `source` | The source directory to read from. | No | `.` |
-| `output` | The destination directory where the filtered copy will be created. | No | `sliced-repo` |
+| `output` | The destination directory. If not set, a temporary directory will be created. | No | |
 | `extension-map`| A comma-separated list of `old:new` extension pairs to remap. | No | |
 | `push-branch-name`| The name of the branch to push the sliced contents to. | No | |
 | `commit-message`| The commit message to use when pushing the sliced branch. | No | `chore: Update repository slice` |
