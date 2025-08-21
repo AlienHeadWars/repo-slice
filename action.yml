@@ -122,7 +122,12 @@ runs:
         # Convert multi-line extension-map to comma-separated string
         EXTENSION_MAP_ARG=""
         if [ -n "${{ inputs.extension-map }}" ]; then
-          COMMA_SEPARATED_MAP=$(echo "${{ inputs.extension-map }}" | tr '\n' ',' | sed 's/,$//')
+          # Read the multi-line string into an array, filtering out empty lines
+          mapfile -t lines < <(echo "${{ inputs.extension-map }}")
+          
+          # Join the array with commas
+          COMMA_SEPARATED_MAP=$(IFS=,; echo "${lines[*]}")
+          
           EXTENSION_MAP_ARG="--extension-map \"$COMMA_SEPARATED_MAP\""
         fi
 
