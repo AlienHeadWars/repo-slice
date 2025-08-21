@@ -71,7 +71,9 @@ jobs:
         uses: ./
         with:
           manifest: |
-            + /test-data/**
+            # Include everything except the .git directory
+            - /.git/
+            + **
           local-binary-path: ./repo-slice-test
           max-files: '2' # Limit is 2, slice has 3 files.
         continue-on-error: true
