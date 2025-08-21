@@ -43,7 +43,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Create Go Backend Slice
-        uses: AlienHeadWars/repo-slice@v1.2.0 # Use the latest version
+        uses: AlienHeadWars/repo-slice@v1.2.1 # Use the latest version
         with:
           manifest: |
             # Include all directories to allow for traversal.
@@ -81,7 +81,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Create React Frontend Slice
-        uses: AlienHeadWars/repo-slice@v1.2.0 # Use the latest version
+        uses: AlienHeadWars/repo-slice@v1.2.1 # Use the latest version
         with:
           manifest: |
             + **/
