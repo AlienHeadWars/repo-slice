@@ -9,6 +9,8 @@ on:
 jobs:
   tag:
     name: "Create and Update Version"
+    # Add a condition to the job to prevent it from running on commits made by the bot.
+    if: "github.actor != 'github-actions[bot]'"
     runs-on: ubuntu-latest
     permissions:
       contents: write
