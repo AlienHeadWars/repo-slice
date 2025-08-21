@@ -35,6 +35,7 @@ jobs:
         with:
           manifest: |
             + /test-data/**
+            - *
           local-binary-path: ./repo-slice-test
           max-files: '5' # Limit is 5, slice has 3 files.
 
