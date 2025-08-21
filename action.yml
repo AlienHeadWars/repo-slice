@@ -119,8 +119,7 @@ runs:
           MANIFEST_PATH="${{ inputs.manifestFile }}"
         fi
 
-       # Construct and execute the repo-slice command.
-
+        # Construct and execute the repo-slice command.
         CMD="$BINARY_PATH --manifest \"$MANIFEST_PATH\" --source \"${{ inputs.source }}\" --output \"$OUTPUT_PATH\""
         if [ -n "${{ inputs.extension-map }}" ]; then
           CMD="$CMD --extension-map \"${{ inputs.extension-map }}\""
