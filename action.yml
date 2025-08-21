@@ -39,11 +39,17 @@ outputs:
 runs:
   using: "composite"
   steps:
+    - name: Create temporary directory for binary
+      id: tempdir
+      shell: bash
+      run: echo "path=$(mktemp -d)" >> $GITHUB_OUTPUT
+
     - name: Download and prepare binary
       if: "inputs.local-binary-path == ''"
       shell: bash
       env:
         GH_TOKEN: ${{ github.token }}
+      working-directory: ${{ steps.tempdir.outputs.path }}
       run: |
         VERSION="v0.0.21" # Hardcoded version for stability
         echo "Downloading repo-slice binary for version $VERSION..."
@@ -91,7 +97,7 @@ runs:
         fi
 
         # Determine which binary to use
-        BINARY_PATH="./repo-slice"
+        BINARY_PATH="${{ steps.tempdir.outputs.path }}/repo-slice"
         if [ -n "${{ inputs.local-binary-path }}" ]; then
           BINARY_PATH="${{ inputs.local-binary-path }}"
         fi
