@@ -36,7 +36,7 @@ jobs:
       - name: Check if a new version was created
         id: check_version
         run: |
-          if [ "${{ steps.tag_dry_run.outputs.new_tag }}" == "${{ steps.tag_dry_run.outputs.previous_tag }}" ]; then
+          if [ "${{ steps.tag_dry_run.outputs.new_tag }}" == "${{ steps.tag_dry_run.outputs.old_tag }}" ]; then
             echo "No new version created. Skipping release."
             echo "new_version_created=false" >> $GITHUB_OUTPUT
           else
