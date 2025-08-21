@@ -9,8 +9,6 @@ on:
 jobs:
   tag:
     name: "Create and Update Version"
-    # Add a condition to the job to prevent it from running on commits made by the bot.
-    if: "github.actor != 'github-actions[bot]'"
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -33,7 +31,13 @@ jobs:
           DEFAULT_BUMP: patch
           DRY_RUN: true
 
+      - name: Check if a new version was created
+        id: check_version
+        if: steps.tag_dry_run.outputs.new_tag != ''
+        run: echo "new_version_created=true" >> $GITHUB_OUTPUT
+
       - name: Update version in files
+        if: steps.check_version.outputs.new_version_created == 'true'
         run: |
           VERSION=${{ steps.tag_dry_run.outputs.new_tag }}
           echo "Bumping version to $VERSION"
@@ -41,6 +45,7 @@ jobs:
           sed -i "s/repo-slice@v[0-9]*\.[0-9]*\.[0-9]*/repo-slice@$VERSION/" README.md
 
       - name: Verify version update
+        if: steps.check_version.outputs.new_version_created == 'true'
         run: |
           VERSION=${{ steps.tag_dry_run.outputs.new_tag }}
           echo "Verifying version in action.yml"
@@ -49,41 +54,42 @@ jobs:
           grep "repo-slice@$VERSION" README.md
 
       - name: Commit version bump
+        if: steps.check_version.outputs.new_version_created == 'true'
         uses: stefanzweifel/git-auto-commit-action@778341af668090896ca464160c2def5d1d1a3eb0 # Pinned to v6.0.1
         with:
-          commit_message: "chore(release): Bump version to ${{ steps.tag_dry_run.outputs.new_tag }}"
+          commit_message: "chore(release): Bump version to ${{ steps.tag_dry_run.outputs.new_tag }} [skip ci]"
           
       - name: Create Tag
+        if: steps.check_version.outputs.new_version_created == 'true'
         id: create_tag
-        uses: anothrNick/github-tag-action@e528bc2b9628971ce0e6f823f3052d1dcd9d512c # Pinned to v1.7.3
+        uses: anothrNick/github-tag-action@e528bc2b9628971ce0e6f823f3052d1dcd9d512c
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           WITH_V: true
           DEFAULT_BUMP: patch
-          # Use the custom tag from the dry run to ensure consistency
           CUSTOM_TAG: ${{ steps.tag_dry_run.outputs.new_tag }}
   
   goreleaser:
     name: "Run GoReleaser"
-    runs-on: ubuntu-latest
     needs: tag
+    if: needs.tag.outputs.tag != ''
     permissions:
-      contents: write # Required to create the GitHub Release.
+      contents: write
+    runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository at new tag
+      - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          # Check out the specific tag that was just created in the 'tag' job.
           ref: ${{ needs.tag.outputs.tag }}
           fetch-depth: 0
 
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.24.5' # Should match your go.mod version
+          go-version: '1.24.5'
 
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@e435ccd777264be153ace6237001ef4d979d3a7a # Pinned to v6.0.0
+        uses: goreleaser/goreleaser-action@e435ccd777264be153ace6237001ef4d979d3a7a
         with:
           version: latest
           args: release --clean
