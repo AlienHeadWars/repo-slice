@@ -14,6 +14,15 @@ Our development process follows these steps:
 4.  **Open a Pull Request**: When the work is complete, open a Pull Request to merge your branch into `main`.
 5.  **Code Review**: The PR must be reviewed and approved by at least one other developer before it can be merged. The reviewer is responsible for ensuring the changes adhere to all project standards. **All pull requests will be automatically scanned by SonarCloud for code quality and Coveralls for test coverage.**
 
+## Project Architecture
+
+This project is composed of two main parts: a Go command-line tool and a GitHub Action that wraps it.
+
+* **The Go CLI Tool (`./cmd/repo-slice`)**: This is the core engine of the project. Its only responsibility is to slice a repository based on a manifest file. All the core logic for file operations, including filtering and extension remapping, lives here.
+* **The GitHub Action (`action.yml`)**: This is the primary, user-facing interface for the project. It's a `composite` action that orchestrates the entire workflow. Its responsibilities include parsing user inputs, downloading the correct binary, running the CLI tool, and performing workflow-specific tasks like validating the output and pushing the slice to a new branch.
+
+When contributing, changes to the core slicing logic should be made in the Go application, while changes to the user workflow, inputs, or CI/CD orchestration should be made in the `action.yml` file.
+
 ## Branching Strategy
 
 All work, without exception, must be done on a feature branch. This ensures that the `main` branch is always stable. The following rules must be adhered to:
