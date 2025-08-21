@@ -94,6 +94,9 @@ A clean, predictable, and consistent codebase is the foundation of our developme
 
 ## Testing Standards
 
+This project has two main types of tests: tests for the Go CLI tool and end-to-end tests for the GitHub Action.
+
+### Go CLI Tool Tests
 This project separates fast-running **unit tests** from slower **integration tests** that interact with the file system.
 
 * **Unit Tests**: These are located in `_test.go` files and do not require any special configuration to run.
@@ -106,6 +109,11 @@ To run all tests, including integration tests, use the `-tags` flag:
 `go test -v ./... -tags=integration`
 
 Our CI pipeline is configured to run the complete test suite.
+
+### GitHub Action Tests
+The GitHub Action is tested via dedicated workflows located in the `.github/workflows/` directory (e.g., `test-action.yml`). These workflows are configured to run automatically on every pull request to the `main` branch.
+
+To test changes to the `action.yml` file, simply open a pull request with your changes. The test workflows will then run, using the version of the action in your branch (`uses: ./`).
 
 ## Documentation Standards
 
