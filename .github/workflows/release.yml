@@ -8,7 +8,7 @@ on:
 
 jobs:
   tag:
-    name: "Create Git Tag"
+    name: "Create and Update Version"
     runs-on: ubuntu-latest
     permissions:
       contents: write # This permission is required to push a new tag to the repository
@@ -17,17 +17,48 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Required for the tag action to analyze commit history
 
+      - name: Calculate next version (Dry Run)
+        id: tag_dry_run
+        uses: anothrNick/github-tag-action@e528bc2b9628971ce0e6f823f3052d1dcd9d512c # Pinned to v1.7.3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WITH_V: true
+          DEFAULT_BUMP: patch
+          DRY_RUN: true
+
+      - name: Update version in files
+        run: |
+          VERSION=${{ steps.tag_dry_run.outputs.new_tag }}
+          echo "Bumping version to $VERSION"
+          sed -i "s/VERSION=\".*\"/VERSION=\"$VERSION\"/" action.yml
+          sed -i "s/repo-slice@v[0-9]*\.[0-9]*\.[0-9]*/repo-slice@$VERSION/" README.md
+
+      - name: Verify version update
+        run: |
+          VERSION=${{ steps.tag_dry_run.outputs.new_tag }}
+          echo "Verifying version in action.yml"
+          grep "VERSION=\"$VERSION\"" action.yml
+          echo "Verifying version in README.md"
+          grep "repo-slice@$VERSION" README.md
+
+      - name: Commit version bump
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore(release): Bump version to ${{ steps.tag_dry_run.outputs.new_tag }}"
+          
       - name: Create Tag
-        # This action analyzes commit messages since the last tag,
-        # determines the next semantic version, and creates a new tag.
         id: create_tag
         uses: anothrNick/github-tag-action@e528bc2b9628971ce0e6f823f3052d1dcd9d512c # Pinned to v1.7.3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           WITH_V: true
           DEFAULT_BUMP: patch
-
+          # Use the custom tag from the dry run to ensure consistency
+          CUSTOM_TAG: ${{ steps.tag_dry_run.outputs.new_tag }}
+  
   goreleaser:
     name: "Run GoReleaser"
     runs-on: ubuntu-latest
@@ -44,7 +75,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.24.5'
+          go-version: '1.24.5' # Should match your go.mod version
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@e435ccd777264be153ace6237001ef4d979d3a7a # Pinned to v6.0.0
