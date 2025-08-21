@@ -15,9 +15,8 @@ inputs:
     required: false
     default: '.'
   output:
-    description: 'The destination directory where the filtered copy will be created.'
+    description: 'The destination directory. If not set, a temporary directory will be created.'
     required: false
-    default: 'sliced-repo'
   extension-map:
     description: 'A comma-separated list of `old:new` extension pairs to remap (e.g., `tsx:ts,mdx:md`).'
     required: false
@@ -75,7 +74,7 @@ runs:
       id: slice
       shell: bash
       run: |
-        # Step 1: Validate that exactly one manifest input is provided.
+        # Validate that exactly one manifest input is provided.
         if [ -n "${{ inputs.manifest }}" ] && [ -n "${{ inputs.manifestFile }}" ]; then
           echo "Error: Both 'manifest' and 'manifestFile' inputs cannot be used simultaneously." >&2
           exit 1
@@ -85,32 +84,36 @@ runs:
           exit 1
         fi
 
+        # Determine the output path. Use a temporary directory if not specified.
+        OUTPUT_PATH="${{ inputs.output }}"
+        if [ -z "$OUTPUT_PATH" ]; then
+          OUTPUT_PATH=$(mktemp -d)
+        fi
+
         # Determine which binary to use
         BINARY_PATH="./repo-slice"
         if [ -n "${{ inputs.local-binary-path }}" ]; then
           BINARY_PATH="${{ inputs.local-binary-path }}"
         fi
 
-        # Step 4: Handle the manifest input.
+        # Handle the manifest input.
         MANIFEST_PATH=""
         if [ -n "${{ inputs.manifest }}" ]; then
-          # If 'manifest' is set, write it to a temp file.
           MANIFEST_PATH=$(mktemp)
           echo "${{ inputs.manifest }}" > "$MANIFEST_PATH"
         else
-          # Otherwise, use the path from 'manifestFile'.
           MANIFEST_PATH="${{ inputs.manifestFile }}"
         fi
 
-        # Step 5: Construct and execute the repo-slice command.
-        CMD="$BINARY_PATH --manifest \"$MANIFEST_PATH\" --source \"${{ inputs.source }}\" --output \"${{ inputs.output }}\""
+        # Construct and execute the repo-slice command.
+        CMD="$BINARY_PATH --manifest \"$MANIFEST_PATH\" --source \"${{ inputs.source }}\" --output \"$OUTPUT_PATH\""
         if [ -n "${{ inputs.extension-map }}" ]; then
           CMD="$CMD --extension-map \"${{ inputs.extension-map }}\""
         fi
 
         echo "Executing: $CMD"
         eval "$CMD"
-        echo "path=${{ inputs.output }}" >> $GITHUB_OUTPUT
+        echo "path=$OUTPUT_PATH" >> $GITHUB_OUTPUT
 
     - name: Prepare repository for push
       if: "inputs.push-branch-name != ''"
