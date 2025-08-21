@@ -16,9 +16,13 @@ Manually creating and maintaining these separate, context-specific branches is a
 
 This allows you to create and automatically maintain streamlined branches for each of your AI assistants, ensuring they always have the latest, most relevant context without any manual intervention.
 
-## Example Workflow
+## Example Workflows
 
-Here is a complete, copy-paste-ready example of a GitHub Actions workflow. It generates a context for a "Go Backend Developer" AI, including only the main application, the slicer utility, and the project's license.
+Here are some complete, copy-paste-ready examples of GitHub Actions workflows.
+
+### Basic Slicing
+
+This workflow generates a context for a "Go Backend Developer" AI, including only the main application, the slicer utility, and the project's license.
 
 ```yaml
 # .github/workflows/update-ai-context.yml
@@ -52,6 +56,42 @@ jobs:
             - *
           push-branch-name: 'context/backend-dev'
           commit-message: 'chore: Update backend-dev AI context'
+````
+
+### Slicing with Extension Mapping
+
+This workflow generates a context for a "React Frontend Developer" AI. It includes all `.tsx` files but renames them to `.ts` in the final slice to improve compatibility with AI tools.
+
+```yaml
+# .github/workflows/update-frontend-context.yml
+name: Update Frontend AI Context
+
+on:
+  push:
+    branches:
+      - 'main'
+
+jobs:
+  update-frontend-developer-context:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create React Frontend Slice
+        uses: AlienHeadWars/repo-slice@v0.0.28 # Use the latest version
+        with:
+          manifest: |
+            + **/
+            + **/*.tsx
+            + /package.json
+            - *
+          push-branch-name: 'context/frontend-dev'
+          commit-message: 'chore: Update frontend-dev AI context'
+          extension-map: |
+            tsx:ts
 ```
 
 ## Using the Action
