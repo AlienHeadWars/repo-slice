@@ -18,10 +18,10 @@ Our development process follows these steps:
 
 This project is composed of two main parts: a Go command-line tool and a GitHub Action that wraps it.
 
-* **The Go CLI Tool (`./cmd/repo-slice`)**: This is the core engine of the project. Its only responsibility is to slice a repository based on a manifest file. All the core logic for file operations, including filtering and extension remapping, lives here.
+* **The Go CLI Tool (`./cmd/repo-slice`)**: This is the core engine of the project. It acts as a user-friendly wrapper around the powerful `rsync` command. Its responsibilities are to validate inputs, construct the correct `rsync` command with the appropriate filter rules, and execute it. The core file remapping logic also lives here.
 * **The GitHub Action (`action.yml`)**: This is the primary, user-facing interface for the project. It's a `composite` action that orchestrates the entire workflow. Its responsibilities include parsing user inputs, downloading the correct binary, running the CLI tool, and performing workflow-specific tasks like validating the output and pushing the slice to a new branch.
 
-When contributing, changes to the core slicing logic should be made in the Go application, while changes to the user workflow, inputs, or CI/CD orchestration should be made in the `action.yml` file.
+When contributing, changes to the core slicing logic will likely involve modifying how the `rsync` command is constructed, while changes to the user workflow or CI/CD orchestration should be made in the `action.yml` file.
 
 ## Branching Strategy
 
@@ -49,12 +49,13 @@ To create an explicit and descriptive version history, we follow the **Conventio
 A commit message must consist of a title and a body, separated by a blank line. 
 
 ```
-<type>: <A short, imperative-tense description of the change>
 
-<A detailed explanation of the "why" behind the change. This body is
-required for all non-trivial changes.>
+\<type\>: \<A short, imperative-tense description of the change\>
 
-<Signed-off-by: Author Name <author.email@example.com>>
+\<A detailed explanation of the "why" behind the change. This body is
+required for all non-trivial changes.\>
+
+\<Signed-off-by: Author Name [author.email@example.com](mailto:author.email@example.com)\>
 
 ```
 
