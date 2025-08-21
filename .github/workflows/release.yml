@@ -63,14 +63,14 @@ jobs:
 
       - name: Commit version bump
         if: steps.check_version.outputs.new_version_created == 'true'
-        uses: stefanzweifel/git-auto-commit-action@v5
+        uses: stefanzweifel/git-auto-commit-action@778341af668090896ca464160c2def5d1d1a3eb0 # Pinned to v6.0.1
         with:
           commit_message: "chore(release): Bump version to ${{ steps.tag_dry_run.outputs.new_tag }} [skip ci]"
           
       - name: Create Tag
         if: steps.check_version.outputs.new_version_created == 'true'
         id: create_tag
-        uses: anothrNick/github-tag-action@e528bc2b9628971ce0e6f823f3052d1dcd9d512c
+        uses: anothrNick/github-tag-action@e528bc2b9628971ce0e6f823f3052d1dcd9d512c # Pinned to v1.7.3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           WITH_V: true
@@ -97,7 +97,7 @@ jobs:
           go-version: '1.24.5'
 
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@e435ccd777264be153ace623f3052d1dcd9d512c
+        uses: goreleaser/goreleaser-action@e435ccd777264be153ace6237001ef4d979d3a7a # Pinned to v6.0.0
         with:
           version: latest
           args: release --clean
