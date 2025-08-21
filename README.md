@@ -124,15 +124,17 @@ For a complete guide on advanced features like inheriting rules from other files
 | `push-branch-name`| The name of the branch to push the sliced contents to. | No | |
 | `commit-message`| The commit message to use when pushing the sliced branch. | No | `chore: Update repository slice` |
 | `max-files`| The maximum number of files allowed in the slice. | No | `5000` |
+| `max-size`| The maximum total size of the slice (e.g., `100M`). | No | `100M` |
 | `local-binary-path`| Path to a local binary. (For testing purposes). | No | |
 
 **Note**: You must provide exactly one of `manifest` or `manifest-file`.
 
 ### Validation
 
-To prevent the creation of context branches that are too large for an AI to process, this action includes a validation step that runs after the slice is created.
+To prevent the creation of context branches that are too large for an AI to process, this action includes validation steps that run after the slice is created.
 
   * **`max-files`**: This input sets a limit on the total number of files in the slice. If the count is exceeded, the action will fail. The default is `5000`.
+  * **`max-size`**: This input sets a limit on the total size of the slice. You can use suffixes like `K`, `M`, and `G`. If the size is exceeded, the action will fail. The default is `100M`.
 
 ### Outputs
 

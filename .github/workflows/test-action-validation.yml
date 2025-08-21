@@ -34,6 +34,7 @@ jobs:
         uses: ./
         with:
           manifest: |
+            + **/
             + /test-data/**
             - *
           local-binary-path: ./repo-slice-test
@@ -72,11 +73,88 @@ jobs:
         uses: ./
         with:
           manifest: |
-            # Include everything except the .git directory
-            - /.git/
-            + **
+            + **/
+            + /test-data/**
+            - *
           local-binary-path: ./repo-slice-test
           max-files: '2' # Limit is 2, slice has 3 files.
+        continue-on-error: true
+
+      - name: Check failure status
+        if: steps.slice.outcome != 'failure'
+        run: |
+          echo "Error: The action should have failed but it succeeded."
+          exit 1
+
+  test_size_validation_pass:
+    name: "Test max-size validation (Pass)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.5'
+
+      - name: Build repo-slice binary
+        run: go build -o ./repo-slice-test ./cmd/repo-slice
+
+      - name: Create test data
+        run: |
+          mkdir -p test-data
+          # Create a 5KB file
+          dd if=/dev/zero of=test-data/file1.txt bs=1K count=5
+
+      - name: Run repo-slice action
+        id: slice
+        uses: ./
+        with:
+          manifest: |
+            + **/
+            + /test-data/**
+            - *
+          local-binary-path: ./repo-slice-test
+          max-size: '10K' # Limit is 10KB, slice is 5KB.
+
+      - name: Check success status
+        if: steps.slice.outcome != 'success'
+        run: |
+          echo "Error: The action should have succeeded but it failed."
+          exit 1
+
+  test_size_validation_fail:
+    name: "Test max-size validation (Fail)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.5'
+
+      - name: Build repo-slice binary
+        run: go build -o ./repo-slice-test ./cmd/repo-slice
+
+      - name: Create test data
+        run: |
+          mkdir -p test-data
+          # Create a 5KB file
+          dd if=/dev/zero of=test-data/file1.txt bs=1K count=5
+
+      - name: Run repo-slice action that will exceed limit
+        id: slice
+        uses: ./
+        with:
+          manifest: |
+            + **/
+            + /test-data/**
+            - *
+          local-binary-path: ./repo-slice-test
+          max-size: '2K' # Limit is 2KB, slice is 5KB.
         continue-on-error: true
 
       - name: Check failure status
