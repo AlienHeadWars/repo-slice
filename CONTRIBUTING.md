@@ -14,6 +14,15 @@ Our development process follows these steps:
 4.  **Open a Pull Request**: When the work is complete, open a Pull Request to merge your branch into `main`.
 5.  **Code Review**: The PR must be reviewed and approved by at least one other developer before it can be merged. The reviewer is responsible for ensuring the changes adhere to all project standards. **All pull requests will be automatically scanned by SonarCloud for code quality and Coveralls for test coverage.**
 
+## Project Architecture
+
+This project is composed of two main parts: a Go command-line tool and a GitHub Action that wraps it.
+
+* **The Go CLI Tool (`./cmd/repo-slice`)**: This is the core engine of the project. It acts as a user-friendly wrapper around the powerful `rsync` command. Its responsibilities are to validate inputs, construct the correct `rsync` command with the appropriate filter rules, and execute it. The core file remapping logic also lives here.
+* **The GitHub Action (`action.yml`)**: This is the primary, user-facing interface for the project. It's a `composite` action that orchestrates the entire workflow. Its responsibilities include parsing user inputs, downloading the correct binary, running the CLI tool, and performing workflow-specific tasks like validating the output and pushing the slice to a new branch.
+
+When contributing, changes to the core slicing logic will likely involve modifying how the `rsync` command is constructed, while changes to the user workflow or CI/CD orchestration should be made in the `action.yml` file.
+
 ## Branching Strategy
 
 All work, without exception, must be done on a feature branch. This ensures that the `main` branch is always stable. The following rules must be adhered to:
@@ -40,12 +49,13 @@ To create an explicit and descriptive version history, we follow the **Conventio
 A commit message must consist of a title and a body, separated by a blank line. 
 
 ```
-<type>: <A short, imperative-tense description of the change>
 
-<A detailed explanation of the "why" behind the change. This body is
-required for all non-trivial changes.>
+\<type\>: \<A short, imperative-tense description of the change\>
 
-<Signed-off-by: Author Name <author.email@example.com>>
+\<A detailed explanation of the "why" behind the change. This body is
+required for all non-trivial changes.\>
+
+\<Signed-off-by: Author Name [author.email@example.com](mailto:author.email@example.com)\>
 
 ```
 
@@ -94,6 +104,9 @@ A clean, predictable, and consistent codebase is the foundation of our developme
 
 ## Testing Standards
 
+This project has two main types of tests: tests for the Go CLI tool and end-to-end tests for the GitHub Action.
+
+### Go CLI Tool Tests
 This project separates fast-running **unit tests** from slower **integration tests** that interact with the file system.
 
 * **Unit Tests**: These are located in `_test.go` files and do not require any special configuration to run.
@@ -106,6 +119,11 @@ To run all tests, including integration tests, use the `-tags` flag:
 `go test -v ./... -tags=integration`
 
 Our CI pipeline is configured to run the complete test suite.
+
+### GitHub Action Tests
+The GitHub Action is tested via dedicated workflows located in the `.github/workflows/` directory (e.g., `test-action.yml`). These workflows are configured to run automatically on every pull request to the `main` branch.
+
+To test changes to the `action.yml` file, simply open a pull request with your changes. The test workflows will then run, using the version of the action in your branch (`uses: ./`).
 
 ## Documentation Standards
 
