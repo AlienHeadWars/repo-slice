@@ -34,6 +34,10 @@ inputs:
     description: 'The maximum number of files allowed in the slice. The action will fail if this is exceeded.'
     required: false
     default: '5000'
+  max-size:
+    description: 'The maximum total size of the slice (e.g., `100M`). The action will fail if this is exceeded.'
+    required: false
+    default: '100M'
 
 outputs:
   slice-path:
@@ -147,6 +151,24 @@ runs:
         echo "Slice contains $FILE_COUNT files."
         if [ "$FILE_COUNT" -gt "$MAX_FILES" ]; then
           echo "Error: File count ($FILE_COUNT) exceeds the maximum allowed ($MAX_FILES)." >&2
+          exit 1
+        fi
+
+    - name: Validate slice size
+      shell: bash
+      run: |
+        SIZE_IN_BYTES=$(du -sb "${{ steps.slice.outputs.path }}" | cut -f1)
+        MAX_SIZE_INPUT="${{ inputs.max-size }}"
+        
+        # Convert MAX_SIZE_INPUT to bytes
+        MAX_SIZE_BYTES=$(echo "$MAX_SIZE_INPUT" | awk \
+          'BEGIN{IGNORECASE=1; K=1024; M=K*K; G=M*K; T=G*K}
+           /K/{val=$1*K} /M/{val=$1*M} /G/{val=$1*G} /T/{val=$1*T}
+           END{print val}')
+        
+        echo "Slice size is $SIZE_IN_BYTES bytes."
+        if [ "$SIZE_IN_BYTES" -gt "$MAX_SIZE_BYTES" ]; then
+          echo "Error: Slice size ($SIZE_IN_BYTES bytes) exceeds the maximum allowed ($MAX_SIZE_INPUT)." >&2
           exit 1
         fi
 
