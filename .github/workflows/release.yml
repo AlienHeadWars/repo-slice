@@ -68,16 +68,17 @@ jobs:
     permissions:
       contents: write # Required to create the GitHub Release.
     steps:
-      - name: Checkout repository
+      - name: Checkout repository at new tag
         uses: actions/checkout@v4
         with:
-          # This is required so GoReleaser can generate a changelog.
+          # Check out the specific tag that was just created in the 'tag' job.
+          ref: ${{ needs.tag.outputs.tag }}
           fetch-depth: 0
 
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.24.5'
+          go-version: '1.24.5' # Should match your go.mod version
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@e435ccd777264be153ace6237001ef4d979d3a7a # Pinned to v6.0.0
