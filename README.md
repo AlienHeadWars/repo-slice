@@ -77,15 +77,15 @@ For a complete guide on advanced features like inheriting rules from other files
 | Input | Description | Required | Default |
 | :--- | :--- | :--- | :--- |
 | `manifest` | The manifest content, provided as an inline string. | No | |
-| `manifestFile`| Path to the manifest file containing filter rules. | No | |
+| `manifest-file`| Path to the manifest file containing filter rules. | No | |
 | `source` | The source directory to read from. | No | `.` |
 | `output` | The destination directory. If not set, a temporary directory will be created. | No | |
-| `extension-map`| A comma-separated list of `old:new` extension pairs to remap. | No | |
+| `extension-map`| A multi-line string of `old:new` extension pairs to remap. | No | |
 | `push-branch-name`| The name of the branch to push the sliced contents to. | No | |
 | `commit-message`| The commit message to use when pushing the sliced branch. | No | `chore: Update repository slice` |
 | `local-binary-path`| Path to a local binary. (For testing purposes). | No | |
 
-**Note**: You must provide exactly one of `manifest` or `manifestFile`.
+**Note**: You must provide exactly one of `manifest` or `manifest-file`.
 
 ### Outputs
 
