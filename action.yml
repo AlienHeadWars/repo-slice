@@ -58,7 +58,7 @@ runs:
         GH_TOKEN: ${{ github.token }}
         TEMP_DIR: ${{ steps.binary_path.outputs.dir }}
       run: |
-        VERSION="v0.0.28" # Hardcoded version for stability
+        VERSION="v0.0.29" # Hardcoded version for stability
         echo "Downloading repo-slice binary for version $VERSION..."
         
         OS_ARCH=""
