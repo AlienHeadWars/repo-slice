@@ -8,7 +8,7 @@ on:
 
 jobs:
   test_with_manifest_file:
-    name: "Test with manifestFile"
+    name: "Test with manifest-file"
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -31,7 +31,7 @@ jobs:
         id: slice
         uses: ./ # Uses the action in the current repository
         with:
-          manifestFile: 'test-manifest.txt'
+          manifest-file: 'test-manifest.txt'
           output: 'test-output'
           local-binary-path: ./repo-slice-test
 
@@ -39,9 +39,7 @@ jobs:
         run: |
           echo "Verifying contents of ${{ steps.slice.outputs.slice-path }}..."
           ls -R ${{ steps.slice.outputs.slice-path }}
-          # Check that a file that should be present exists
           test -f "${{ steps.slice.outputs.slice-path }}/README.md"
-          # Check that a file that should have been excluded does not exist
           ! test -f "${{ steps.slice.outputs.slice-path }}/go.mod"
 
   test_with_inline_manifest:
@@ -61,7 +59,7 @@ jobs:
 
       - name: Run repo-slice action
         id: slice
-        uses: ./ # Uses the action in the current repository
+        uses: ./
         with:
           manifest: |
             + .
@@ -100,7 +98,7 @@ jobs:
         id: slice
         uses: ./
         with:
-          manifestFile: 'test-manifest.txt'
+          manifest-file: 'test-manifest.txt'
           local-binary-path: ./repo-slice-test
 
       - name: Verify slice contents in temp dir
@@ -110,6 +108,44 @@ jobs:
           test -f "${{ steps.slice.outputs.slice-path }}/README.md"
           ! test -f "${{ steps.slice.outputs.slice-path }}/go.mod"
 
+  test_with_extension_map:
+    name: "Test with extension-map"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.5'
+
+      - name: Build repo-slice binary
+        run: go build -o ./repo-slice-test ./cmd/repo-slice
+
+      - name: Create test file for remapping
+        run: |
+          mkdir -p test-remap
+          touch test-remap/component.tsx
+
+      - name: Run repo-slice action with extension-map
+        id: slice
+        uses: ./
+        with:
+          manifest: |
+            + /test-remap/
+          output: 'test-output'
+          local-binary-path: ./repo-slice-test
+          extension-map: |
+            tsx:ts
+
+      - name: Verify remapped file
+        run: |
+          echo "Verifying remapped file in ${{ steps.slice.outputs.slice-path }}..."
+          ls -R ${{ steps.slice.outputs.slice-path }}
+          test -f "${{ steps.slice.outputs.slice-path }}/test-remap/component.ts"
+          ! test -f "${{ steps.slice.outputs.slice-path }}/test-remap/component.tsx"
+
   test_for_failure:
     name: "Test for input validation failure"
     runs-on: ubuntu-latest
@@ -118,12 +154,11 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run repo-slice action with both inputs
-        # This step is expected to fail.
         id: slice
         uses: ./
         with:
           manifest: '+ .'
-          manifestFile: 'manifest.txt'
+          manifest-file: 'manifest.txt'
           output: 'test-output'
         continue-on-error: true
 
