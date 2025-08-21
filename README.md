@@ -123,9 +123,16 @@ For a complete guide on advanced features like inheriting rules from other files
 | `extension-map`| A multi-line string of `old:new` extension pairs to remap. | No | |
 | `push-branch-name`| The name of the branch to push the sliced contents to. | No | |
 | `commit-message`| The commit message to use when pushing the sliced branch. | No | `chore: Update repository slice` |
+| `max-files`| The maximum number of files allowed in the slice. | No | `5000` |
 | `local-binary-path`| Path to a local binary. (For testing purposes). | No | |
 
 **Note**: You must provide exactly one of `manifest` or `manifest-file`.
+
+### Validation
+
+To prevent the creation of context branches that are too large for an AI to process, this action includes a validation step that runs after the slice is created.
+
+  * **`max-files`**: This input sets a limit on the total number of files in the slice. If the count is exceeded, the action will fail. The default is `5000`.
 
 ### Outputs
 

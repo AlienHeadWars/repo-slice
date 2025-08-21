@@ -30,6 +30,10 @@ inputs:
   local-binary-path:
     description: 'Path to a local repo-slice binary. If set, the download step will be skipped. For testing purposes.'
     required: false
+  max-files:
+    description: 'The maximum number of files allowed in the slice. The action will fail if this is exceeded.'
+    required: false
+    default: '5000'
 
 outputs:
   slice-path:
@@ -130,13 +134,21 @@ runs:
 
         CMD="$BINARY_PATH --manifest \"$MANIFEST_PATH\" --source \"${{ inputs.source }}\" --output \"$OUTPUT_PATH\" $EXTENSION_MAP_ARG"
         
-        echo "--- Debug Info ---"
-        echo "Final command: $CMD"
-        echo "------------------"
-
         echo "Executing: $CMD"
         eval "$CMD"
         echo "path=$OUTPUT_PATH" >> $GITHUB_OUTPUT
+
+    - name: Validate slice contents
+      shell: bash
+      run: |
+        FILE_COUNT=$(find "${{ steps.slice.outputs.path }}" -type f | wc -l)
+        MAX_FILES=${{ inputs.max-files }}
+
+        echo "Slice contains $FILE_COUNT files."
+        if [ "$FILE_COUNT" -gt "$MAX_FILES" ]; then
+          echo "Error: File count ($FILE_COUNT) exceeds the maximum allowed ($MAX_FILES)." >&2
+          exit 1
+        fi
 
     - name: Prepare repository for push
       if: "inputs.push-branch-name != ''"

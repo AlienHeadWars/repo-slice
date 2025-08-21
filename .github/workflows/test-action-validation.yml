@@ -1,0 +1,86 @@
+# .github/workflows/test-action-validation.yml
+name: Test Action Validation
+
+on:
+  pull_request:
+    branches:
+      - 'main'
+
+jobs:
+  test_file_count_pass:
+    name: "Test max-files validation (Pass)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.5'
+
+      - name: Build repo-slice binary
+        run: go build -o ./repo-slice-test ./cmd/repo-slice
+
+      - name: Create test data
+        run: |
+          mkdir -p test-data/subdir
+          touch test-data/file1.txt
+          touch test-data/file2.txt
+          touch test-data/subdir/file3.txt
+
+      - name: Run repo-slice action
+        id: slice
+        uses: ./
+        with:
+          manifest: |
+            + /test-data/**
+            - *
+          local-binary-path: ./repo-slice-test
+          max-files: '5' # Limit is 5, slice has 3 files.
+
+      - name: Check success status
+        if: steps.slice.outcome != 'success'
+        run: |
+          echo "Error: The action should have succeeded but it failed."
+          exit 1
+
+  test_file_count_fail:
+    name: "Test max-files validation (Fail)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.5'
+
+      - name: Build repo-slice binary
+        run: go build -o ./repo-slice-test ./cmd/repo-slice
+
+      - name: Create test data
+        run: |
+          mkdir -p test-data/subdir
+          touch test-data/file1.txt
+          touch test-data/file2.txt
+          touch test-data/subdir/file3.txt
+
+      - name: Run repo-slice action that will exceed limit
+        id: slice
+        uses: ./
+        with:
+          manifest: |
+            # Include everything except the .git directory
+            - /.git/
+            + **
+          local-binary-path: ./repo-slice-test
+          max-files: '2' # Limit is 2, slice has 3 files.
+        continue-on-error: true
+
+      - name: Check failure status
+        if: steps.slice.outcome != 'failure'
+        run: |
+          echo "Error: The action should have failed but it succeeded."
+          exit 1
