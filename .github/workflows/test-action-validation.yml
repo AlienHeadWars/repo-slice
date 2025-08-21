@@ -1,0 +1,39 @@
+# .github/workflows/test-action-validation.yml
+name: Test Action Validation
+
+on:
+  pull_request:
+    branches:
+      - 'main'
+
+jobs:
+  test_file_count_validation:
+    name: "Test max-files validation"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions-go/setup-go@v5
+        with:
+          go-version: '1.24.5'
+
+      - name: Build repo-slice binary
+        run: go build -o ./repo-slice-test ./cmd/repo-slice
+
+      - name: Create a slice that will exceed the limit
+        id: slice
+        uses: ./ # Uses the action in the current repository
+        with:
+          manifest: |
+            + **
+          local-binary-path: ./repo-slice-test
+          max-files: '5' # Set a low limit that will be exceeded
+        continue-on-error: true
+
+      - name: Check failure status
+        if: steps.slice.outcome != 'failure'
+        run: |
+          echo "Error: The action should have failed due to exceeding the file count, but it succeeded."
+          exit 1
