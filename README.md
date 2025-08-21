@@ -1,12 +1,3 @@
-Yes, that's a great point. We should absolutely document the new validation features to make it clear to users how they work and how to configure them.
-
-The best place for this is a new "Validation" section in the `README.md`, right after the "Inputs" table.
-
-Here is the complete, updated `README.md` with the new section added.
-
-### `README.md`
-
-````markdown
 # repo-slice
 
 [![Coverage Status](https://coveralls.io/repos/github/AlienHeadWars/repo-slice/badge.svg)](https://coveralls.io/github/AlienHeadWars/repo-slice) [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=AlienHeadWars_repo-slice&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=AlienHeadWars_repo-slice)
@@ -133,17 +124,15 @@ For a complete guide on advanced features like inheriting rules from other files
 | `push-branch-name`| The name of the branch to push the sliced contents to. | No | |
 | `commit-message`| The commit message to use when pushing the sliced branch. | No | `chore: Update repository slice` |
 | `max-files`| The maximum number of files allowed in the slice. | No | `5000` |
-| `max-size`| The maximum total size of the slice (e.g., `100M`). | No | `100M` |
 | `local-binary-path`| Path to a local binary. (For testing purposes). | No | |
 
 **Note**: You must provide exactly one of `manifest` or `manifest-file`.
 
 ### Validation
 
-To prevent the creation of context branches that are too large for an AI to process, this action includes two validation steps that run after the slice is created.
+To prevent the creation of context branches that are too large for an AI to process, this action includes a validation step that runs after the slice is created.
 
   * **`max-files`**: This input sets a limit on the total number of files in the slice. If the count is exceeded, the action will fail. The default is `5000`.
-  * **`max-size`**: This input sets a limit on the total size of the slice. You can use suffixes like `K`, `M`, and `G`. If the size is exceeded, the action will fail. The default is `100M`.
 
 ### Outputs
 
