@@ -54,9 +54,11 @@ runs:
     - name: Prepare binary path
       id: binary_path
       shell: bash
+      env:
+        INPUT_LOCAL_BINARY_PATH: ${{ inputs.local-binary-path }}
       run: |
-        if [ -n "${{ inputs.local-binary-path }}" ]; then
-          echo "path=${{ inputs.local-binary-path }}" >> $GITHUB_OUTPUT
+        if [ -n "$INPUT_LOCAL_BINARY_PATH" ]; then
+          echo "path=$INPUT_LOCAL_BINARY_PATH" >> $GITHUB_OUTPUT
         else
           TEMP_DIR=$(mktemp -d)
           echo "path=$TEMP_DIR/repo-slice" >> $GITHUB_OUTPUT
@@ -99,21 +101,27 @@ runs:
     - name: Run repo-slice
       id: slice
       shell: bash
+      env:
+        INPUT_MANIFEST: ${{ inputs.manifest }}
+        INPUT_MANIFEST_FILE: ${{ inputs.manifest-file }}
+        INPUT_OUTPUT: ${{ inputs.output }}
+        INPUT_SOURCE: ${{ inputs.source }}
+        INPUT_EXTENSION_MAP: ${{ inputs.extension-map }}
       run: |
         # To provide a clear user experience, the action must fail if the manifest
         # source is ambiguous (both provided) or missing (neither provided).
-        if [ -n "${{ inputs.manifest }}" ] && [ -n "${{ inputs.manifest-file }}" ]; then
+        if [ -n "$INPUT_MANIFEST" ] && [ -n "$INPUT_MANIFEST_FILE" ]; then
           echo "Error: Both 'manifest' and 'manifest-file' inputs cannot be used simultaneously." >&2
           exit 1
         fi
-        if [ -z "${{ inputs.manifest }}" ] && [ -z "${{ inputs.manifest-file }}" ]; then
+        if [ -z "$INPUT_MANIFEST" ] && [ -z "$INPUT_MANIFEST_FILE" ]; then
           echo "Error: Exactly one of 'manifest' or 'manifest-file' must be provided." >&2
           exit 1
         fi
 
         # To ensure multiple runs of the action in the same job are isolated,
         # a temporary directory is used for the output if one is not specified.
-        OUTPUT_PATH="${{ inputs.output }}"
+        OUTPUT_PATH="$INPUT_OUTPUT"
         if [ -z "$OUTPUT_PATH" ]; then
           OUTPUT_PATH=$(mktemp -d)
         fi
@@ -125,22 +133,22 @@ runs:
         # To support both inline and file-based manifests, we normalize the
         # input into a single MANIFEST_PATH variable.
         MANIFEST_PATH=""
-        if [ -n "${{ inputs.manifest }}" ]; then
+        if [ -n "$INPUT_MANIFEST" ]; then
           MANIFEST_PATH=$(mktemp)
-          echo "${{ inputs.manifest }}" > "$MANIFEST_PATH"
+          echo "$INPUT_MANIFEST" > "$MANIFEST_PATH"
         else
-          MANIFEST_PATH="${{ inputs.manifest-file }}"
+          MANIFEST_PATH="$INPUT_MANIFEST_FILE"
         fi
 
         # To provide a user-friendly YAML interface, the multi-line extension-map
         # must be converted to the comma-separated format the CLI expects.
         EXTENSION_MAP_ARG=""
-        if [ -n "${{ inputs.extension-map }}" ]; then
-          COMMA_SEPARATED_MAP=$(echo "${{ inputs.extension-map }}" | awk 'NF' | paste -sd, -)
+        if [ -n "$INPUT_EXTENSION_MAP" ]; then
+          COMMA_SEPARATED_MAP=$(echo "$INPUT_EXTENSION_MAP" | awk 'NF' | paste -sd, -)
           EXTENSION_MAP_ARG="--extension-map \"$COMMA_SEPARATED_MAP\""
         fi
 
-        CMD="$BINARY_PATH --manifest \"$MANIFEST_PATH\" --source \"${{ inputs.source }}\" --output \"$OUTPUT_PATH\" $EXTENSION_MAP_ARG"
+        CMD="$BINARY_PATH --manifest \"$MANIFEST_PATH\" --source \"$INPUT_SOURCE\" --output \"$OUTPUT_PATH\" $EXTENSION_MAP_ARG"
         
         echo "Executing: $CMD"
         eval "$CMD"
@@ -148,9 +156,11 @@ runs:
 
     - name: Validate slice contents
       shell: bash
+      env:
+        INPUT_MAX_FILES: ${{ inputs.max-files }}
       run: |
         FILE_COUNT=$(find "${{ steps.slice.outputs.path }}" -type f | wc -l)
-        MAX_FILES=${{ inputs.max-files }}
+        MAX_FILES=$INPUT_MAX_FILES
 
         echo "Slice contains $FILE_COUNT files."
         if [ "$FILE_COUNT" -gt "$MAX_FILES" ]; then
@@ -160,9 +170,11 @@ runs:
 
     - name: Validate slice size
       shell: bash
+      env:
+        INPUT_MAX_SIZE: ${{ inputs.max-size }}
       run: |
         SIZE_IN_BYTES=$(du -sb "${{ steps.slice.outputs.path }}" | cut -f1)
-        MAX_SIZE_INPUT="${{ inputs.max-size }}"
+        MAX_SIZE_INPUT="$INPUT_MAX_SIZE"
         
         # awk is used to parse common size suffixes (K, M, G, T) into a
         # comparable byte value.
