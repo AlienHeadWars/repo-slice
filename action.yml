@@ -192,10 +192,26 @@ runs:
     - name: Prepare repository for push
       if: "inputs.push-branch-name != ''"
       shell: bash
+      env:
+        INPUT_PUSH_BRANCH_NAME: ${{ inputs.push-branch-name }}
       run: |
         # To push the sliced directory as its own repository, it needs a .git
         # directory with the correct remote origin.
         rsync -a ./.git/ "${{ steps.slice.outputs.path }}/.git/"
+
+        # ⚡ CRITICAL FIX: Enter the sliced copy and sever ties with the heavy history
+        cd "${{ steps.slice.outputs.path }}"
+
+        # 1. Disable sparse-checkout so Git doesn't hide our sliced files
+        git config core.sparseCheckout false
+        rm -f .git/info/sparse-checkout
+
+        # 2. Detach into a fresh orphan branch (No parent commit)
+        git checkout --orphan "$INPUT_PUSH_BRANCH_NAME"
+
+        # 3. Physically nuke the Git index. This instantly erases all memory of the 
+        # omitted files without triggering a network fetch to compare blobs.
+        rm -f .git/index
 
     - name: Push to branch
       if: "inputs.push-branch-name != ''"
